@@ -1,0 +1,143 @@
+/* App */
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+
+background-color: #ece5dd;
+max-height: 100%;
+padding: 20px;
+
+}
+
+/*login*/
+
+
+.login_title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px;
+}
+
+.login_icon {
+  margin-right: 10px;
+  color: rgb(4, 170, 170);
+}
+
+.login_form {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login_form input {
+  height: 37px;
+  width: 25%;
+  border-radius: 10px;
+  border: 2px solid rgb(4, 170, 170);
+  font-size: 15px;
+  padding-inline: 5px;
+}
+
+.login_form button {
+  width: 10%;
+  height: 50px;
+  font-weight: bold;
+  border-radius: 10px;
+  font-size: 18px;
+  background-color: #075e54;
+  border: none;
+  color: #fff;
+}
+/* ChatContainer */
+
+.chats_header{
+    display: flex;
+    justify-content: space-between;
+}
+.chats_icon{
+    color: red;
+}
+.chats_logout{
+    color: blue;
+}
+
+/* Chat List */
+
+.chat_sender {
+  display: flex;
+  justify-content: flex-end;
+  flex-direction: row;
+}
+
+.chat_sender img,
+.chat_receiver img {
+  width: 30px;
+  height: 30px;
+  border-radius: 100%;
+}
+  /*Chat_List*/
+.chat_list{
+  height: 75vh;
+  overflow: scroll;
+  overflow-x: hidden;
+}
+
+.chat_sender p {
+  padding: 10px;
+  background-color: white;
+  border-radius: 10px;
+  max-width: 60%;
+}
+
+.chat_receiver {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: row;
+}
+
+.chat_receiver p {
+  padding: 10px;
+  background-color: rgb(4, 170, 170);
+  border-radius: 10px;
+  max-width: 60%;
+}
+
+/* Input Text*/
+
+.inputtext_container {
+display: flex;
+justify-content: space-evenly;
+align-items: center;
+}
+
+.inputtext_container button {
+  width: 10%;
+  height: 50px;
+  font-weight: bold;
+  border-radius: 10px;
+  font-size: 18px;
+  background-color: rgb(4, 170, 170); /* teal */
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.inputtext_container button:hover {
+  background-color: rgb(2, 140, 140); /* darker on hover */
+}
+
+.inputtext_container textarea{
+    width: 60%;
+    height: 50px;
+    border-radius: 10px;
+    border-width: 0;
+    padding: 10px;
+    font-size: 18px;
+}
