@@ -23,14 +23,27 @@ const UsersLogin = ({ setUser }) => {
 
     const data = await res.json();
 
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', data.username);
-      localStorage.setItem('avatar', data.avatar);
-      localStorage.setItem('userId', data.userId); // ✅ Save userId
-      setUser(data.username);
-    } else {
-      alert(data.error || 'Something went wrong');
+    if (mode === 'login') {
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', data.username);
+        localStorage.setItem('avatar', data.avatar);
+        localStorage.setItem('userId', data.userId); 
+        setUser(data.username);
+      } else {
+        alert(data.error || 'Login failed');
+      }
+    } else if (mode === 'register') {
+      if (data.success || data.message === 'User registered successfully') {
+        alert('Registration successful. Please log in.');
+        // Switch to login form
+        setMode('login'); 
+        setUsername('');
+        setPassword('');
+        setConfirm('');
+      } else {
+        alert(data.error || 'Registration failed');
+      }
     }
   };
 
