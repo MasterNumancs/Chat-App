@@ -1,34 +1,76 @@
 import React, { useState } from 'react';
 import { FaReact } from 'react-icons/fa6';
 import '../Style.css';
-import _ from 'lodash'
 
-const UsersLogin = ({setUser}) => {
-  const [userName, setUserName] = useState()
-  const handleUser = () => {
-    if(!userName) return;
-    localStorage.setItem('user', userName)
-    setUser(userName)
-    localStorage.setItem('avatar', `https://picsum.photos/id/${_.random(1,1000)}/200/300`)
-  }
+const UsersLogin = ({ setUser }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [mode, setMode] = useState('login');
+
+  const handleSubmit = async () => {
+    if (!username || !password) return alert('Please enter username and password');
+
+    if (mode === 'register' && password !== confirm) {
+      return alert('Passwords do not match');
+    }
+
+    const res = await fetch(`http://localhost:3001/${mode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await res.json();
+
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', data.username);
+      localStorage.setItem('avatar', data.avatar);
+      localStorage.setItem('userId', data.userId); // ✅ Save userId
+      setUser(data.username);
+    } else {
+      alert(data.error || 'Something went wrong');
+    }
+  };
 
   return (
-    <div className='login_Container'>
-      <div className='login_title'>
-        <FaReact className='login_icon' />
+    <div className="login_Container">
+      <div className="login_title">
+        <FaReact className="login_icon" />
         <h1>Chat App</h1>
       </div>
-      <div className='login_form'>
-        <input 
-          type="text" 
-          placeholder='Enter a unique Name' 
-          value={userName || ''}
-          onChange={(e)=>setUserName(e.target.value)} 
+
+      <div className="login_form">
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
         />
-        <button onClick={handleUser}>Login</button>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+        />
+        {mode === 'register' && (
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+          />
+        )}
+        <button onClick={handleSubmit}>
+          {mode === 'login' ? 'Login' : 'Register'}
+        </button>
+        <p onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+          {mode === 'login' ? 'Register' : 'Login'}
+        </p>
       </div>
     </div>
   );
-}
+};
 
 export default UsersLogin;

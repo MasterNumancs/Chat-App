@@ -1,78 +1,127 @@
-/* App */
-
-*{
+/* Reset & Global */
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* App */
 .App {
-
-background-color: #ece5dd;
-max-height: 100%;
-padding: 20px;
-
+  background-color: #ece5dd;
+  max-height: 100%;
+  padding: 20px;
 }
 
-/*login*/
-
+/* Login Container */
+.login_Container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #f5f7fa;
+}
 
 .login_title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 10px;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .login_icon {
-  margin-right: 10px;
-  color: rgb(4, 170, 170);
+  font-size: 2.5rem;
+  color: #61dafb;
 }
 
 .login_form {
   display: flex;
-  justify-content: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.login_form input,
+.login_form button {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
 .login_form input {
-  height: 37px;
-  width: 25%;
-  border-radius: 10px;
-  border: 2px solid rgb(4, 170, 170);
-  font-size: 15px;
-  padding-inline: 5px;
+  border: 1px solid #ccc;
 }
 
 .login_form button {
-  width: 10%;
-  height: 50px;
-  font-weight: bold;
-  border-radius: 10px;
-  font-size: 18px;
-  background-color: #075e54;
+  background: #61dafb;
   border: none;
-  color: #fff;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
-/* ChatContainer */
 
-.chats_header{
-    display: flex;
-    justify-content: space-between;
+.login_form button:hover {
+  background: #4db6e1;
 }
-.chats_icon{
-    color: red;
+
+.login_form p {
+  font-size: 0.9rem;
+  color: #333;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 5px;
 }
-.chats_logout{
-    color: blue;
+
+/* Chat Container */
+.chats_header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.chats_icon {
+  color: red;
+}
+
+.chats_logout {
+  color: blue;
 }
 
 /* Chat List */
+.chat_list {
+  height: 75vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
 
-.chat_sender {
+.chat_sender,
+.chat_receiver {
   display: flex;
-  justify-content: flex-end;
   flex-direction: row;
+  justify-content: flex-end;
+}
+
+.chat_receiver {
+  justify-content: flex-start;
+}
+
+.chat_sender p,
+.chat_receiver p {
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 60%;
+}
+
+.chat_sender p {
+  background-color: white;
+}
+
+.chat_receiver p {
+  background-color: rgb(4, 170, 170);
 }
 
 .chat_sender img,
@@ -81,63 +130,36 @@ padding: 20px;
   height: 30px;
   border-radius: 100%;
 }
-  /*Chat_List*/
-.chat_list{
-  height: 75vh;
-  overflow: scroll;
-  overflow-x: hidden;
-}
 
-.chat_sender p {
-  padding: 10px;
-  background-color: white;
-  border-radius: 10px;
-  max-width: 60%;
-}
-
-.chat_receiver {
-  display: flex;
-  justify-content: flex-start;
-  flex-direction: row;
-}
-
-.chat_receiver p {
-  padding: 10px;
-  background-color: rgb(4, 170, 170);
-  border-radius: 10px;
-  max-width: 60%;
-}
-
-/* Input Text*/
-
+/* Input Text */
 .inputtext_container {
-display: flex;
-justify-content: space-evenly;
-align-items: center;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.inputtext_container textarea {
+  width: 60%;
+  height: 50px;
+  border-radius: 10px;
+  border: none;
+  padding: 10px;
+  font-size: 18px;
 }
 
 .inputtext_container button {
   width: 10%;
   height: 50px;
   font-weight: bold;
-  border-radius: 10px;
   font-size: 18px;
-  background-color: rgb(4, 170, 170); /* teal */
-  border: none;
+  border-radius: 10px;
+  background-color: rgb(4, 170, 170);
   color: #fff;
+  border: none;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .inputtext_container button:hover {
-  background-color: rgb(2, 140, 140); /* darker on hover */
-}
-
-.inputtext_container textarea{
-    width: 60%;
-    height: 50px;
-    border-radius: 10px;
-    border-width: 0;
-    padding: 10px;
-    font-size: 18px;
+  background-color: rgb(2, 140, 140);
 }
