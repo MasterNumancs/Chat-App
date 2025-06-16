@@ -1,66 +1,93 @@
-import React from 'react';
-import { useEffect } from 'react';
-import { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import '../Style.css';
 
-// Sender chat component
-const SenderChat = ({ message, username, avatar }) => {
-  return (
-    <div className="chat-list chat_sender">
-      <img src={avatar} alt="Sender" />
-      <p>
-        <strong>{username}</strong> <br />{message}
-      </p>
-    </div>
-  );
+const formatTime = (isoString) => {
+  const date = new Date(isoString);
+  return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
 };
 
-// Receiver chat component
-const ReceiverChat = ({ message, username, avatar }) => {
-  return (
-    <div className="chat-list chat_receiver">
-      <img src={avatar} alt="Receiver" />
-      <p>
-        <strong>{username}</strong><br /> {message}
-      </p>
+const SenderChat = ({ message, username, avatar, timestamp }) => (
+  <div className="chat-list chat_sender">
+    <img src={avatar} alt="Sender" className="chat-avatar" />
+    <div className="chat-content">
+      <p className="chat-username"><strong>{username}</strong></p>
+      <p className="chat-message">{message}</p>
+      <span className="chat_time">{formatTime(timestamp)}</span>
     </div>
-  );
-};
+  </div>
+);
 
-// Main chat list
-const ChatList = ({ chats = [] }) => {  
-const endOfMessages=useRef()  
-  const user = localStorage.getItem('user');
-  useEffect(()=>{
-    scrollToBottom()
-  },[chats])
-  const scrollToBottom = () => {
-    endOfMessages.current?.scrollIntoView({behavior: "smooth"})
-  }
-  
+const ReceiverChat = ({ message, username, avatar, timestamp }) => (
+  <div className="chat-list chat_receiver">
+    <img src={avatar} alt="Receiver" className="chat-avatar" />
+    <div className="chat-content">
+      <p className="chat-username"><strong>{username}</strong></p>
+      <p className="chat-message">{message}</p>
+      <span className="chat_time">{formatTime(timestamp)}</span>
+    </div>
+  </div>
+);
+
+const GroupChat = ({ message, username, avatar, timestamp, groupName }) => (
+  <div className="chat-list chat_group">
+    <img src={avatar} alt="Group User" className="chat-avatar" />
+    <div className="chat-content">
+      <p className="chat-username">
+        <strong>{username}</strong>
+        <span className="group_badge">#{groupName || 'Group'}</span>
+      </p>
+      <p className="chat-message">{message}</p>
+      <span className="chat_time">{formatTime(timestamp)}</span>
+    </div>
+  </div>
+);
+
+const ChatList = ({ chats = [], currentUserId }) => {
+  const endOfMessages = useRef();
+
+  useEffect(() => {
+    endOfMessages.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chats]);
+
   return (
-    <div className='chat_list'>
-      {chats.map((chat, index) => {
-        if (chat.username === user) {
-          return (
+    <div className="chat_list_container">
+      <div className="chat_list">
+        {chats.map((chat) => {
+          const key = chat._id || chat.timestamp;
+
+          if (chat.groupName || chat.groupId) {
+            return (
+              <GroupChat
+                key={`group-${key}`}
+                message={chat.message}
+                username={chat.username}
+                avatar={chat.avatar}
+                timestamp={chat.timestamp}
+                groupName={chat.groupName}
+              />
+            );
+          }
+
+          return chat.fromUserId === currentUserId ? (
             <SenderChat
-              key={index}
+              key={`sender-${key}`}
               message={chat.message}
               username={chat.username}
               avatar={chat.avatar}
+              timestamp={chat.timestamp}
             />
-          );
-        } else {
-          return (
-            <ReceiverChat 
-              key={index}
+          ) : (
+            <ReceiverChat
+              key={`receiver-${key}`}
               message={chat.message}
               username={chat.username}
               avatar={chat.avatar}
+              timestamp={chat.timestamp}
             />
           );
-        }
-      })}
-      <div ref={endOfMessages}></div>
+        })}
+        <div ref={endOfMessages} className="scroll-anchor" />
+      </div>
     </div>
   );
 };

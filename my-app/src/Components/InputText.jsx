@@ -1,26 +1,45 @@
 import React, { useState } from 'react';
 
-const InputText = ({ addMessage }) => {
-   // Initialize as empty string
-  const [message, setMessage] = useState("");
+const InputText = ({ addMessage, selectedChat }) => {
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const sendMessage = () => {
-      addMessage({ message });
-      setMessage("");
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    if (!selectedChat) {
+      setError('Please select a recipient or group.');
+      return;
+    }
+
+    setError('');
+    setMessage('');
+
+    // Send message to parent
+    addMessage({
+      message: trimmed,
+      toUserId: selectedChat,
+    });
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
   return (
-    <div className='inputtext_container'>
+    <div className="inputtext_container">
       <textarea
-        name="message"
-        id="message"
-        rows="1"
         placeholder="Type your message..."
-         // Controlled input
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-      ></textarea>
+        onKeyDown={handleKeyPress}
+      />
       <button onClick={sendMessage}>Send</button>
+      {error && <p style={{ color: 'red', marginTop: '5px' }}>{error}</p>}
     </div>
   );
 };

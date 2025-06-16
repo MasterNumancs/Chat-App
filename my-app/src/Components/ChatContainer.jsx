@@ -2,54 +2,66 @@ import React, { useEffect, useRef, useState } from 'react';
 import ChatList from './ChatList';
 import InputText from './InputText';
 import UsersLogin from './UsersLogin';
+import CreateGroup from './CreateGroup';
 import socketIOClient from 'socket.io-client';
+import axios from 'axios';
 
 const ChatContainer = () => {
   const [user, setUser] = useState(localStorage.getItem('user'));
   const [chats, setChats] = useState([]);
   const [users, setUsers] = useState([]);
-  const [toUserId, setToUserId] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [selectedChat, setSelectedChat] = useState('group');
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const socketRef = useRef();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Connect to socket
     socketRef.current = socketIOClient('http://localhost:3001', {
-      auth: { token }
+      auth: { token },
     });
 
     socketRef.current.on('connect_error', (err) => {
       console.error('Socket connect error:', err.message);
     });
 
-    socketRef.current.on('chat', (messageList) => {
-      setChats(messageList);
-    });
-
+    socketRef.current.on('chat', (messageList) => setChats(messageList));
     socketRef.current.on('message', (msg) => {
-      setChats(prev => [...prev, msg]);
+      setChats((prev) => [...prev, msg]);
     });
 
-    return () => {
-      socketRef.current.disconnect();
-    };
+    return () => socketRef.current.disconnect();
   }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await fetch('http://localhost:3001/users', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await res.json();
-      const currentUserId = localStorage.getItem('userId');
-      setUsers(data.filter(u => u._id !== currentUserId));
+      try {
+        const res = await axios.get('http://localhost:3001/users', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        const currentUserId = localStorage.getItem('userId');
+        setUsers(res.data.filter(u => u._id !== currentUserId));
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
     };
-
     if (user) fetchUsers();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const res = await axios.get('http://localhost:3001/groups', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setGroups(res.data);
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+      }
+    };
+    if (user) fetchGroups();
   }, [user]);
 
   const sendToSocket = (chat) => {
@@ -58,7 +70,7 @@ const ChatContainer = () => {
 
   const addMessage = (chat) => {
     const trimmed = chat.message.trim();
-    if (!trimmed || !toUserId) return;
+    if (!trimmed) return;
 
     const newChat = {
       ...chat,
@@ -66,8 +78,16 @@ const ChatContainer = () => {
       username: localStorage.getItem('user'),
       avatar: localStorage.getItem('avatar'),
       fromUserId: localStorage.getItem('userId'),
-      toUserId
+      timestamp: new Date().toISOString(),
     };
+
+    if (selectedChat === 'group') {
+      newChat.groupName = 'Public Group';
+    } else if (selectedChat.startsWith('group-')) {
+      newChat.groupId = selectedChat.replace('group-', '');
+    } else {
+      newChat.toUserId = selectedChat;
+    }
 
     sendToSocket(newChat);
   };
@@ -78,27 +98,61 @@ const ChatContainer = () => {
   };
 
   return (
-    <div>
+    <div className="chat_wrapper">
       {user ? (
         <>
-          <div className='chats_header'>
-            <h4>Username: {user}</h4>
-            <p className='chats_logout' onClick={handleLogout}><strong>Logout</strong></p>
-          </div>
+          <div className="sidebar">
+            <div className="sidebar_header">
+              <h4>{user}</h4>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
 
-          {/* Recipient selector */}
-          <div>
-            <label>Select recipient: </label>
-            <select onChange={e => setToUserId(e.target.value)} value={toUserId}>
-              <option value="">--Select User--</option>
-              {users.map(u => (
-                <option key={u._id} value={u._id}>{u.username}</option>
+            <div className="contact_list">
+              <div className={`contact_item ${selectedChat === 'group' ? 'active' : ''}`} onClick={() => setSelectedChat('group')}>
+                🌐 Public Group
+              </div>
+              {groups.map(group => (
+                <div 
+                  key={group._id} 
+                  className={`contact_item ${selectedChat === `group-${group._id}` ? 'active' : ''}`} 
+                  onClick={() => setSelectedChat(`group-${group._id}`)}
+                >
+                  👥 {group.name}
+                </div>
               ))}
-            </select>
+              {users.map(u => (
+                <div 
+                  key={u._id} 
+                  className={`contact_item ${selectedChat === u._id ? 'active' : ''}`} 
+                  onClick={() => setSelectedChat(u._id)}
+                >
+                  👤 {u.username}
+                </div>
+              ))}
+            </div>
+
+            <button 
+              className="create-group-toggle" 
+              onClick={() => setShowCreateGroup(!showCreateGroup)}
+            >
+              {showCreateGroup ? 'Cancel' : '+ New Group'}
+            </button>
+
+            {showCreateGroup && (
+              <div className="sidebar_create_group">
+                <CreateGroup 
+                  users={users} 
+                  setShowCreateGroup={setShowCreateGroup} 
+                  setGroups={setGroups}
+                />
+              </div>
+            )}
           </div>
 
-          <ChatList chats={chats} />
-          <InputText addMessage={addMessage} toUserId={toUserId} />
+          <div className="chat_area">
+            <ChatList chats={chats} currentUserId={localStorage.getItem('userId')} />
+            <InputText addMessage={addMessage} toUserId={selectedChat} />
+          </div>
         </>
       ) : (
         <UsersLogin setUser={setUser} />

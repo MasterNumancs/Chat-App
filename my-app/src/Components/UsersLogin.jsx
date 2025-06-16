@@ -15,35 +15,43 @@ const UsersLogin = ({ setUser }) => {
       return alert('Passwords do not match');
     }
 
-    const res = await fetch(`http://localhost:3001/${mode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const res = await fetch(`http://localhost:3001/${mode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (mode === 'login') {
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', data.username);
-        localStorage.setItem('avatar', data.avatar);
-        localStorage.setItem('userId', data.userId); 
-        setUser(data.username);
-      } else {
-        alert(data.error || 'Login failed');
+      if (!res.ok) {
+        return alert(data.error || 'Request failed');
       }
-    } else if (mode === 'register') {
-      if (data.success || data.message === 'User registered successfully') {
-        alert('Registration successful. Please log in.');
-        // Switch to login form
-        setMode('login'); 
-        setUsername('');
-        setPassword('');
-        setConfirm('');
-      } else {
-        alert(data.error || 'Registration failed');
+
+      if (mode === 'login') {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', data.username);
+          localStorage.setItem('avatar', data.avatar);
+          localStorage.setItem('userId', data.userId);
+          setUser(data.username);
+        } else {
+          alert(data.error || 'Login failed');
+        }
+      } else if (mode === 'register') {
+        if (data.token) {
+          alert('Registration successful. Please log in.');
+          setMode('login');
+          setUsername('');
+          setPassword('');
+          setConfirm('');
+        } else {
+          alert(data.error || 'Registration failed');
+        }
       }
+    } catch (error) {
+      console.error('Submit error:', error);
+      alert('Something went wrong.');
     }
   };
 
