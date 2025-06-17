@@ -42,7 +42,15 @@ const GroupChat = ({ message, username, avatar, timestamp, groupName }) => (
   </div>
 );
 
-const ChatList = ({ chats = [], currentUserId }) => {
+const UserOnlineItem = ({ user }) => (
+  <div className="online-user-item">
+    <img src={user.avatar} alt={user.username} className="user-avatar-small" />
+    <span>{user.username}</span>
+    <span className="online-dot"></span>
+  </div>
+);
+
+const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
   const endOfMessages = useRef();
 
   useEffect(() => {
@@ -52,6 +60,19 @@ const ChatList = ({ chats = [], currentUserId }) => {
   return (
     <div className="chat_list_container">
       <div className="chat_list">
+        {/* Online users section for Public Group */}
+        {selectedChat === 'group' && users.length > 0 && (
+          <div className="online-users-section">
+            <h4>Online Users ({users.length})</h4>
+            <div className="online-users-list">
+              {users.map(user => (
+                <UserOnlineItem key={user._id} user={user} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chat messages */}
         {chats.map((chat) => {
           const key = chat._id || chat.timestamp;
 
@@ -68,7 +89,7 @@ const ChatList = ({ chats = [], currentUserId }) => {
             );
           }
 
-          return chat.fromUserId === currentUserId ? (
+          return chat.fromUserId.toString() === currentUserId.toString() ? (
             <SenderChat
               key={`sender-${key}`}
               message={chat.message}

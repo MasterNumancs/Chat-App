@@ -13,9 +13,10 @@ body, html {
 /* App Wrapper */
 .App {
   background: #ece5dd;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Login */
@@ -79,7 +80,9 @@ body, html {
 /* Main Layout */
 .chat_wrapper {
   display: flex;
-  height: 100%;
+  flex: 1;
+  height: calc(100vh - 0px);
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -105,7 +108,7 @@ body, html {
 }
 
 .sidebar_header button {
-  background-color: #ff4d4d;
+  background-color: #12c92b;
   color: white;
   border: none;
   padding: 6px 12px;
@@ -116,7 +119,7 @@ body, html {
 }
 
 .sidebar_header button:hover {
-  background-color: #d63030;
+  background-color: #4bc414;
 }
 
 /* Group Create */
@@ -175,8 +178,10 @@ body, html {
   display: flex;
   flex-direction: column;
   background: #fff;
+  overflow: hidden;
 }
 
+/* Chat Header */
 .chats_header {
   display: flex;
   justify-content: space-between;
@@ -206,6 +211,7 @@ body, html {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-behavior: smooth;
 }
 
 /* Chat Message */
@@ -242,6 +248,8 @@ body, html {
   max-width: 100%;
   font-size: 1rem;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .chat_sender .chat-content {
@@ -362,6 +370,7 @@ body, html {
   background: #f2dede;
   color: #a94442;
 }
+
 /* Create Group Box Styles */
 .create-group-box {
   padding: 15px;
@@ -438,7 +447,7 @@ body, html {
 }
 
 .dropdown-item.selected {
-  background: #e0e0e0;
+  background: #e6f7ff;
 }
 
 .dropdown-item input {
@@ -462,4 +471,268 @@ body, html {
 
 .create-button:hover {
   background: #45a049;
+}
+
+/* Online Users */
+.user-avatar-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.online-users-section {
+  padding: 10px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+
+.online-users-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.online-user-item {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background: #4CAF50;
+  border-radius: 50%;
+  margin-left: 5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chat_wrapper {
+    flex-direction: column;
+  }
+
+  .sidebar, .chat_area {
+    width: 100%;
+  }
+
+  .inputtext_container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .inputtext_container textarea,
+  .inputtext_container button {
+    width: 100%;
+  }
+}
+
+/* Center the form on the page */
+.login-center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-icon {
+  font-size: 3rem;
+  color: #61dafb;
+  margin-bottom: 1rem;
+}
+
+.auth-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #61dafb;
+  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2);
+}
+
+.auth-button {
+  padding: 12px;
+  background-color: #61dafb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.auth-button:hover {
+  background-color: #4fa8d3;
+}
+
+.auth-toggle {
+  text-align: center;
+  color: #666;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.auth-toggle:hover {
+  color: #61dafb;
+  text-decoration: underline;
+}
+
+/* Avatar Styles */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+  width: 40px;                 /* ✅ Add fixed size */
+  height: 40px;
+  border-radius: 50%;          /* ✅ Make it circular */
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;           /* ✅ Prevent image distortion */
+}
+
+.current-user-avatar {
+  margin-right: 12px;
+}
+
+.sidebar-avatar {
+  margin-right: 10px;
+}
+
+/* Common Avatar Styling */
+.sidebar-avatar,
+.current-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-right: 10px;
+}
+/* Chat type tabs */
+.chat-type-tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.chat-type-tabs button {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+
+.chat-type-tabs button.active {
+  border-bottom-color: #61dafb;
+  font-weight: bold;
+}
+
+/* Chat sections */
+.group-chats-section,
+.private-chats-section {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Contact items */
+.contact_item {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.contact_item:hover {
+  background: #f0f0f0;
+}
+
+.contact_item.active {
+  background: #e1f5fe;
+}
+
+.contact_name {
+  margin-left: 10px;
+  flex-grow: 1;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: #4CAF50;
+}
+
+.status-dot.offline {
+  background: #ccc;
+}
+
+.status-dot.away {
+  background: #FFC107;
 }

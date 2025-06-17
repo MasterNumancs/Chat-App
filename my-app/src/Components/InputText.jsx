@@ -19,7 +19,6 @@ const InputText = ({ addMessage, selectedChat }) => {
     // Send message to parent
     addMessage({
       message: trimmed,
-      toUserId: selectedChat,
     });
   };
 

@@ -4,65 +4,45 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
-// Models
 const Chat = require('./Models/Chat');
 const User = require('./Models/User');
+const Group = require('./Models/Group');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'http://localhost:5173', credentials: true }
+  cors: { origin: 'http://localhost:5173', credentials: true },
 });
 
 const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
 mongoose.connect('mongodb://127.0.0.1:27017/chatapp', {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
 }).then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB error:', err));
 
-
-// ================= AUTH ROUTES =================
+// ================= AUTH =================
 
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-  const bcrypt = require('bcryptjs');
-
   try {
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
-    }
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
-    const existing = await User.findOne({ username });
-    if (existing) {
-      return res.status(400).json({ error: 'Username already taken' });
-    }
+    const existingUser = await User.findOne({ username });
+    if (existingUser) return res.status(400).json({ error: 'Username already taken' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const avatar = `https://api.dicebear.com/6.x/thumbs/svg?seed=${username}`;
 
-    const newUser = await User.create({
-      username,
-      password: hashedPassword,
-      avatar
-    });
-
-    const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: '7d' });
-
-    return res.json({
-      token,
-      username: newUser.username,
-      avatar,
-      userId: newUser._id
-    });
+    const newUser = await User.create({ username, password: hashedPassword, avatar, status: 'offline' });
+    res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -70,67 +50,162 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const bcrypt = require('bcryptjs');
-
   try {
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
-    }
-
+    const { username, password } = req.body;
     const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ error: 'User not found' });
-    }
+    if (!user) return res.status(401).json({ error: 'Invalid username or password' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(401).json({ error: 'Invalid username or password' });
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
 
-    return res.json({
-      token,
-      username: user.username,
-      avatar: user.avatar,
-      userId: user._id
-    });
+    res.json({ token, username: user.username, userId: user._id, avatar: user.avatar });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
+// ================= API ROUTES =================
+
+app.get('/users', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const users = await User.find({ _id: { $ne: decoded.id } }).select('-password');
+    res.json(users);
+  } catch (err) {
+    console.error('Get users error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/groups', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const groups = await Group.find({ members: decoded.id }).populate('members', 'username avatar');
+    res.json(groups);
+  } catch (err) {
+    console.error('Get groups error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/groups', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { name, members } = req.body;
+    const allMembers = [...new Set([...members, decoded.id])];
+
+    const newGroup = await Group.create({ name, members: allMembers, createdBy: decoded.id });
+    const populatedGroup = await Group.findById(newGroup._id).populate('members', 'username avatar');
+    res.status(201).json(populatedGroup);
+  } catch (err) {
+    console.error('Create group error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/chats', async (req, res) => {
+  try {
+    const { groupId, userId } = req.query;
+    let query = {};
+
+    if (groupId) {
+      query.groupId = groupId;
+    } else if (userId) {
+      query.$or = [{ fromUserId: userId }, { toUserId: userId }];
+    } else {
+      query.groupId = null;
+      query.toUserId = null;
+    }
+
+    const chats = await Chat.find(query).sort({ timestamp: 1 }).limit(100);
+    res.json(chats);
+  } catch (err) {
+    console.error('Get chats error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ================= SOCKET.IO =================
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error('Authentication error'));
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return next(new Error('Authentication error'));
+    socket.userId = decoded.id;
+    next();
+  });
+});
+
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  console.log('Socket connected:', socket.id, 'User ID:', socket.userId);
+
+  User.findByIdAndUpdate(socket.userId, { status: 'online' }).exec();
+
+  socket.on('joinPublic', () => {
+    socket.join('group');
+    console.log(`User ${socket.userId} joined public group`);
+  });
+
+  socket.on('joinGroup', (groupId) => {
+    socket.join(groupId);
+    console.log(`User ${socket.userId} joined group ${groupId}`);
+  });
+
+  socket.on('joinPrivate', (userRoomId) => {
+    socket.join(userRoomId);
+    console.log(`User ${socket.userId} joined private room ${userRoomId}`);
+  });
 
   socket.on('sendMessage', async (data) => {
-    const { fromUserId, toUserId, message, username, avatar, groupId } = data;
+    try {
+      const user = await User.findById(socket.userId);
+      if (!user) return;
 
-    const newChat = new Chat({
-      fromUserId,
-      toUserId,
-      groupId: groupId || null,
-      message,
-      username,
-      avatar,
-      timestamp: new Date()
-    });
+      const newChat = new Chat({
+        fromUserId: socket.userId,
+        toUserId: data.toUserId || null,
+        groupId: data.groupId || null,
+        groupName: data.groupName || null,
+        message: data.message,
+        username: user.username,
+        avatar: user.avatar,
+        timestamp: new Date(),
+      });
 
-    await newChat.save();
+      await newChat.save();
 
-    io.emit('receiveMessage', newChat);
+      if (data.groupId) {
+        io.to(data.groupId).emit('receiveMessage', newChat);
+      } else if (data.toUserId) {
+        io.to(data.toUserId).emit('receiveMessage', newChat);
+        socket.emit('receiveMessage', newChat);
+      } else {
+        io.to('group').emit('receiveMessage', newChat);
+      }
+    } catch (err) {
+      console.error('Send message error:', err);
+    }
   });
 
   socket.on('disconnect', () => {
     console.log('Socket disconnected:', socket.id);
+    User.findByIdAndUpdate(socket.userId, { status: 'offline' }).exec();
   });
 });
-
-// ================= START SERVER =================
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
