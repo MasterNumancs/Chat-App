@@ -204,7 +204,7 @@ const ChatContainer = () => {
                 </>
               ) : (
                 <>
-                  <div className="contact_header">Direct Messages(DM)</div>
+                  <div className="contact_header">Direct Messages (DM)</div>
                   {users.map((u) => (
                     <div
                       key={u._id}
