@@ -8,11 +8,15 @@ const formatTime = (isoString) => {
 
 const SenderChat = ({ message, username, avatar, timestamp }) => (
   <div className="chat-list chat_sender">
-    <img src={avatar} alt="Sender" className="chat-avatar" />
     <div className="chat-content">
-      <p className="chat-username"><strong>{username}</strong></p>
-      <p className="chat-message">{message}</p>
-      <span className="chat_time">{formatTime(timestamp)}</span>
+      <div className="chat-meta">
+        <span className="chat_time">{formatTime(timestamp)}</span>
+        <p className="chat-username"><strong>You</strong></p>
+      </div>
+      <div className="message-bubble sender">
+        <p className="chat-message">{message}</p>
+      </div>
+      <img src={avatar} alt="Sender" className="chat-avatar" />
     </div>
   </div>
 );
@@ -22,31 +26,28 @@ const ReceiverChat = ({ message, username, avatar, timestamp }) => (
     <img src={avatar} alt="Receiver" className="chat-avatar" />
     <div className="chat-content">
       <p className="chat-username"><strong>{username}</strong></p>
-      <p className="chat-message">{message}</p>
+      <div className="message-bubble receiver">
+        <p className="chat-message">{message}</p>
+      </div>
       <span className="chat_time">{formatTime(timestamp)}</span>
     </div>
   </div>
 );
 
-const GroupChat = ({ message, username, avatar, timestamp, groupName }) => (
-  <div className="chat-list chat_group">
-    <img src={avatar} alt="Group User" className="chat-avatar" />
+const GroupChat = ({ message, username, avatar, timestamp, groupName, isSender }) => (
+  <div className={`chat-list ${isSender ? 'chat_sender' : 'chat_receiver'}`}>
+    {!isSender && <img src={avatar} alt="Group User" className="chat-avatar" />}
     <div className="chat-content">
       <p className="chat-username">
-        <strong>{username}</strong>
-        <span className="group_badge">#{groupName || 'Group'}</span>
+        <strong>{isSender ? 'You' : username}</strong>
+        {!isSender && <span className="group_badge">#{groupName || 'Group'}</span>}
       </p>
-      <p className="chat-message">{message}</p>
+      <div className={`message-bubble ${isSender ? 'sender' : 'receiver'}`}>
+        <p className="chat-message">{message}</p>
+      </div>
       <span className="chat_time">{formatTime(timestamp)}</span>
     </div>
-  </div>
-);
-
-const UserOnlineItem = ({ user }) => (
-  <div className="online-user-item">
-    <img src={user.avatar} alt={user.username} className="user-avatar-small" />
-    <span>{user.username}</span>
-    <span className="online-dot"></span>
+    {isSender && <img src={avatar} alt="You" className="chat-avatar" />}
   </div>
 );
 
@@ -60,23 +61,30 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
   return (
     <div className="chat_list_container">
       <div className="chat_list">
-        {/* Online users section for Public Group */}
         {selectedChat === 'group' && users.length > 0 && (
           <div className="online-users-section">
             <h4>Online Users ({users.length})</h4>
             <div className="online-users-list">
               {users.map(user => (
-                <UserOnlineItem key={user._id} user={user} />
+                <div key={user._id} className="online-user-item">
+                  <img src={user.avatar} alt={user.username} className="user-avatar-small" />
+                  <span>{user.username}</span>
+                  <span className="online-dot"></span>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Chat messages */}
         {chats.map((chat) => {
           const key = chat._id || chat.timestamp;
+          
+          // Use backend-provided isSender if available, otherwise fall back to local calculation
+          const isSender = chat.isSender !== undefined 
+            ? chat.isSender 
+            : String(chat.fromUserId?._id || chat.fromUserId) === String(currentUserId);
 
-          if (chat.groupName || chat.groupId) {
+          if (isSender) {
             return (
               <GroupChat
                 key={`group-${key}`}
@@ -85,11 +93,12 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
                 avatar={chat.avatar}
                 timestamp={chat.timestamp}
                 groupName={chat.groupName}
+                isSender={isSender}
               />
             );
           }
 
-          return chat.fromUserId.toString() === currentUserId.toString() ? (
+          return isSender ? (
             <SenderChat
               key={`sender-${key}`}
               message={chat.message}

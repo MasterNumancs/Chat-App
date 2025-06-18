@@ -87,6 +87,8 @@ body, html {
 
 /* Sidebar */
 .sidebar {
+  height: 100vh;
+  overflow: auto;
   width: 30%;
   background-color: #f0f0f0;
   display: flex;
@@ -119,7 +121,7 @@ body, html {
 }
 
 .sidebar_header button:hover {
-  background-color: #4bc414;
+  background-color: #1a4207;
 }
 
 /* Group Create */
@@ -470,7 +472,7 @@ body, html {
 }
 
 .create-button:hover {
-  background: #45a049;
+  background: #0e3510;
 }
 
 /* Online Users */
@@ -735,4 +737,50 @@ body, html {
 
 .status-dot.away {
   background: #FFC107;
+}
+
+
+.chat_list_container {
+  background-color: #f7f1f1; 
+}
+
+.chat_wrapper {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 30%;
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+}
+
+/* Chat Area */
+.chat_area {
+  width: 70%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* Scrollable messages */
+.chat_list_scroll {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+/* Input fixed at bottom */
+.input_fixed {
+  border-top: 1px solid #ccc;
+  padding: 10px;
+  background-color: #fafafa;
 }

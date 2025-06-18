@@ -6,6 +6,8 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+// Mongoose Models
+
 const Chat = require('./Models/Chat');
 const User = require('./Models/User');
 const Group = require('./Models/Group');
@@ -18,7 +20,7 @@ const io = new Server(server, {
 
 const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
-
+// Middle Ware
 app.use(cors());
 app.use(express.json());
 
@@ -67,7 +69,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ================= API ROUTES =================
+// API ROUTES
 
 app.get('/users', async (req, res) => {
   try {
@@ -137,7 +139,7 @@ app.get('/chats', async (req, res) => {
   }
 });
 
-// ================= SOCKET.IO =================
+// SOCKET.IO
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -164,7 +166,7 @@ io.on('connection', (socket) => {
     socket.join(groupId);
     console.log(`User ${socket.userId} joined group ${groupId}`);
   });
-
+        
   socket.on('joinPrivate', (userRoomId) => {
     socket.join(userRoomId);
     console.log(`User ${socket.userId} joined private room ${userRoomId}`);

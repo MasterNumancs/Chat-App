@@ -47,7 +47,7 @@ const ChatContainer = () => {
     return () => socketRef.current.disconnect();
   }, []);
 
-  // === FETCH CHATS ON CHAT CHANGE ===
+  // FETCH CHATS ON CHAT CHANGE 
   useEffect(() => {
     const fetchChats = async () => {
       try {
@@ -84,7 +84,7 @@ const ChatContainer = () => {
     if (selectedChat) fetchChats();
   }, [selectedChat]);
 
-  // === FETCH USERS ===
+  // FETCH USERS
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -101,7 +101,7 @@ const ChatContainer = () => {
     if (user) fetchUsers();
   }, [user]);
 
-  // === FETCH GROUPS ===
+  // FETCH GROUPS 
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -117,7 +117,7 @@ const ChatContainer = () => {
     if (user) fetchGroups();
   }, [user]);
 
-  // === SEND MESSAGE ===
+  // SEND MESSAGE
   const addMessage = ({ message }) => {
     if (!message.trim()) return;
 
@@ -150,7 +150,7 @@ const ChatContainer = () => {
     <div className="chat_wrapper">
       {user ? (
         <>
-          {/* === SIDEBAR === */}
+          {/* SIDEBAR */}
           <div className="sidebar">
             <div className="sidebar_header">
               <img src={avatar} alt={user} className="current-user-avatar" />
@@ -174,7 +174,7 @@ const ChatContainer = () => {
                     className={`contact_item ${selectedChat === 'group' ? 'active' : ''}`}
                     onClick={() => setSelectedChat('group')}
                   >
-                    🌐 Public Group
+                    Users and Unseen Messages
                   </div>
                   {groups.map((group) => (
                     <div
@@ -189,7 +189,7 @@ const ChatContainer = () => {
                 </>
               ) : (
                 <>
-                  <div className="contact_header">Direct Messages</div>
+                  <div className="contact_header">Direct Messages(DM)</div>
                   {users.map((u) => (
                     <div
                       key={u._id}
@@ -222,16 +222,26 @@ const ChatContainer = () => {
             )}
           </div>
 
-          {/* === MAIN CHAT AREA === */}
+          {/* MAIN CHAT AREA*/}
           <div className="chat_area">
-            <ChatList
-              chats={chats}
-              currentUserId={userId}
-              users={users}
-              selectedChat={selectedChat}
-            />
-            <InputText addMessage={addMessage} selectedChat={selectedChat} />
-          </div>
+  <div className="chat_list_scroll">
+    <ChatList
+      chats={chats}
+      currentUserId={userId}
+      users={users}
+      selectedChat={selectedChat}
+    />
+  </div>
+  {selectedChat !== 'group' && (
+    <div className="input_fixed">
+      <InputText 
+        addMessage={addMessage} 
+        selectedChat={selectedChat} 
+      />
+    </div>
+  )}
+</div>
+
         </>
       ) : (
         <UsersLogin setUser={setUser} />
