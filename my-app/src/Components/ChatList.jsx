@@ -16,8 +16,8 @@ const SenderChat = ({ message, username, avatar, timestamp }) => (
       <div className="message-bubble sender">
         <p className="chat-message">{message}</p>
       </div>
-      <img src={avatar} alt="Sender" className="chat-avatar" />
     </div>
+    <img src={avatar} alt="Sender" className="chat-avatar" />
   </div>
 );
 
@@ -78,13 +78,12 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
 
         {chats.map((chat) => {
           const key = chat._id || chat.timestamp;
-          
-          // Use backend-provided isSender if available, otherwise fall back to local calculation
+          const isGroupChat = selectedChat === 'group' || selectedChat.startsWith('group-');
           const isSender = chat.isSender !== undefined 
             ? chat.isSender 
             : String(chat.fromUserId?._id || chat.fromUserId) === String(currentUserId);
 
-          if (isSender) {
+          if (isGroupChat) {
             return (
               <GroupChat
                 key={`group-${key}`}

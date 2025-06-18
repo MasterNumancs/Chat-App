@@ -12,9 +12,9 @@ const ChatContainer = () => {
   const [users, setUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [selectedChat, setSelectedChat] = useState('group'); // 'group', 'group-{id}', or userId
+  const [selectedChat, setSelectedChat] = useState('group');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [activeTab, setActiveTab] = useState('groups'); // or 'private'
+  const [activeTab, setActiveTab] = useState('groups');
   const socketRef = useRef();
 
   const userId = localStorage.getItem('userId');
@@ -72,7 +72,6 @@ const ChatContainer = () => {
       }
     };
 
-    // JOIN CHAT ROOMS
     if (socketRef.current?.connected) {
       if (selectedChat === 'group') {
         socketRef.current.emit('joinPublic');
@@ -146,6 +145,16 @@ const ChatContainer = () => {
     setUser('');
   };
 
+  // Improved tab switching with auto-close for Create Group
+  const switchToGroups = () => {
+    setActiveTab('groups');
+  };
+
+  const switchToPrivate = () => {
+    if (showCreateGroup) setShowCreateGroup(false);
+    setActiveTab('private');
+  };
+
   return (
     <div className="chat_wrapper">
       {user ? (
@@ -159,10 +168,16 @@ const ChatContainer = () => {
             </div>
 
             <div className="chat-type-tabs">
-              <button className={activeTab === 'groups' ? 'active' : ''} onClick={() => setActiveTab('groups')}>
+              <button 
+                className={activeTab === 'groups' ? 'active' : ''} 
+                onClick={switchToGroups}
+              >
                 Group Chats
               </button>
-              <button className={activeTab === 'private' ? 'active' : ''} onClick={() => setActiveTab('private')}>
+              <button 
+                className={activeTab === 'private' ? 'active' : ''} 
+                onClick={switchToPrivate}
+              >
                 Private Chats
               </button>
             </div>
@@ -205,12 +220,15 @@ const ChatContainer = () => {
             </div>
 
             {activeTab === 'groups' && (
-              <button className="create-group-toggle" onClick={() => setShowCreateGroup(!showCreateGroup)}>
+              <button 
+                className="create-group-toggle" 
+                onClick={() => setShowCreateGroup(!showCreateGroup)}
+              >
                 {showCreateGroup ? 'Cancel' : '+ New Group'}
               </button>
             )}
 
-            {showCreateGroup && (
+            {activeTab === 'groups' && showCreateGroup && (
               <div className="sidebar_create_group">
                 <CreateGroup
                   users={allUsers}
@@ -224,24 +242,23 @@ const ChatContainer = () => {
 
           {/* MAIN CHAT AREA*/}
           <div className="chat_area">
-  <div className="chat_list_scroll">
-    <ChatList
-      chats={chats}
-      currentUserId={userId}
-      users={users}
-      selectedChat={selectedChat}
-    />
-  </div>
-  {selectedChat !== 'group' && (
-    <div className="input_fixed">
-      <InputText 
-        addMessage={addMessage} 
-        selectedChat={selectedChat} 
-      />
-    </div>
-  )}
-</div>
-
+            <div className="chat_list_scroll">
+              <ChatList
+                chats={chats}
+                currentUserId={userId}
+                users={users}
+                selectedChat={selectedChat}
+              />
+            </div>
+            {selectedChat !== 'group' && (
+              <div className="input_fixed">
+                <InputText 
+                  addMessage={addMessage} 
+                  selectedChat={selectedChat} 
+                />
+              </div>
+            )}
+          </div>
         </>
       ) : (
         <UsersLogin setUser={setUser} />
