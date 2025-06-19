@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import '../Style.css';
 
 const formatTime = (isoString) => {
@@ -53,13 +55,50 @@ const GroupChat = ({ message, username, avatar, timestamp, groupName, isSender }
 
 const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
   const endOfMessages = useRef();
+  const prevChatsLength = useRef(chats.length);
 
   useEffect(() => {
     endOfMessages.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chats]);
+    
+    // Show toast for new messages
+    if (chats.length > prevChatsLength.current) {
+      const newMessage = chats[chats.length - 1];
+      const isCurrentUser = String(newMessage.fromUserId?._id || newMessage.fromUserId) === String(currentUserId);
+      
+      if (!isCurrentUser) {
+        const senderName = newMessage.username || 'Someone';
+        const messagePreview = newMessage.message.length > 30 
+          ? `${newMessage.message.substring(0, 30)}...` 
+          : newMessage.message;
+          
+        toast.info(`${senderName}: ${messagePreview}`, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    }
+    
+    prevChatsLength.current = chats.length;
+  }, [chats, currentUserId]);
 
   return (
     <div className="chat_list_container">
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      
       <div className="chat_list">
         {selectedChat === 'group' && users.length > 0 && (
           <div className="online-users-section">
