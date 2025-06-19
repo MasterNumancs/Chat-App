@@ -9,12 +9,12 @@ const chatSchema = new mongoose.Schema({
   toUserId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: null // For private chats
+    default: null
   },
   groupId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group',
-    default: null // For group chats
+    default: null
   },
   username: {
     type: String,
@@ -25,12 +25,27 @@ const chatSchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: true
+    required: false,       // ✅ allow empty text
+    default: ''
+  },
+  image: {
+    type: String,
+    default: null
+  },
+  isImage: {
+    type: Boolean,
+    default: false
   },
   timestamp: {
     type: Date,
     default: Date.now
   }
+});
+
+// Automatically flag messages that contain images
+chatSchema.pre('save', function(next) {
+  this.isImage = !!this.image;
+  next();
 });
 
 module.exports = mongoose.model('Chat', chatSchema);

@@ -44,29 +44,31 @@ const ChatContainer = () => {
       setChats((prev) => [...prev, msg]);
     });
 
-    return () => socketRef.current.disconnect();
-  }, []);
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, [token, userId]);
 
   // FETCH CHATS ON CHAT CHANGE 
   useEffect(() => {
     const fetchChats = async () => {
       try {
+        let res;
         if (selectedChat === 'group') {
-          const res = await axios.get('http://localhost:3001/chats');
-          setChats(res.data);
+          res = await axios.get('http://localhost:3001/chats');
         } else if (selectedChat.startsWith('group-')) {
           const groupId = selectedChat.replace('group-', '');
-          const res = await axios.get(`http://localhost:3001/chats?groupId=${groupId}`);
-          setChats(res.data);
+          res = await axios.get(`http://localhost:3001/chats?groupId=${groupId}`);
         } else {
-          const res = await axios.get(`http://localhost:3001/chats?userId=${userId}`);
+          res = await axios.get(`http://localhost:3001/chats?userId=${userId}`);
           const filtered = res.data.filter(
             chat =>
               (chat.fromUserId === userId && chat.toUserId === selectedChat) ||
               (chat.fromUserId === selectedChat && chat.toUserId === userId)
           );
-          setChats(filtered);
+          res.data = filtered;
         }
+        setChats(res.data);
       } catch (error) {
         console.error('Error fetching chats:', error);
       }
@@ -81,7 +83,7 @@ const ChatContainer = () => {
     }
 
     if (selectedChat) fetchChats();
-  }, [selectedChat]);
+  }, [selectedChat, userId]);
 
   // FETCH USERS
   useEffect(() => {
@@ -98,7 +100,7 @@ const ChatContainer = () => {
     };
 
     if (user) fetchUsers();
-  }, [user]);
+  }, [user, token, userId]);
 
   // FETCH GROUPS 
   useEffect(() => {
@@ -114,14 +116,14 @@ const ChatContainer = () => {
     };
 
     if (user) fetchGroups();
-  }, [user]);
+  }, [user, token]);
 
-  // SEND MESSAGE
-  const addMessage = ({ message }) => {
-    if (!message.trim()) return;
+  const addMessage = ({ message, image }) => {
+    if (!message && !image) return;
 
     const newChat = {
-      message: message.trim(),
+      message: message || '',
+      image: image || null,
       username,
       avatar,
       fromUserId: userId,
@@ -143,13 +145,12 @@ const ChatContainer = () => {
     socketRef.current?.disconnect();
     localStorage.clear();
     setUser('');
+    setChats([]);
+    setUsers([]);
+    setGroups([]);
   };
 
-  // Improved tab switching with auto-close for Create Group
-  const switchToGroups = () => {
-    setActiveTab('groups');
-  };
-
+  const switchToGroups = () => setActiveTab('groups');
   const switchToPrivate = () => {
     if (showCreateGroup) setShowCreateGroup(false);
     setActiveTab('private');
@@ -164,7 +165,7 @@ const ChatContainer = () => {
             <div className="sidebar_header">
               <img src={avatar} alt={user} className="current-user-avatar" />
               <h4>{user}</h4>
-              <button onClick={handleLogout}>Logout</button>
+              <button onClick={handleLogout} className="logout-button">Logout</button>
             </div>
 
             <div className="chat-type-tabs">
@@ -189,7 +190,7 @@ const ChatContainer = () => {
                     className={`contact_item ${selectedChat === 'group' ? 'active' : ''}`}
                     onClick={() => setSelectedChat('group')}
                   >
-                    Users and Unseen Messages
+                    Public Group
                   </div>
                   {groups.map((group) => (
                     <div
@@ -204,7 +205,7 @@ const ChatContainer = () => {
                 </>
               ) : (
                 <>
-                  <div className="contact_header">Direct Messages (DM)</div>
+                  <div className="contact_header">Direct Messages</div>
                   {users.map((u) => (
                     <div
                       key={u._id}
@@ -240,7 +241,7 @@ const ChatContainer = () => {
             )}
           </div>
 
-          {/* MAIN CHAT AREA*/}
+          {/* MAIN CHAT AREA */}
           <div className="chat_area">
             <div className="chat_list_scroll">
               <ChatList
@@ -250,14 +251,12 @@ const ChatContainer = () => {
                 selectedChat={selectedChat}
               />
             </div>
-            {selectedChat !== 'group' && (
-              <div className="input_fixed">
-                <InputText 
-                  addMessage={addMessage} 
-                  selectedChat={selectedChat} 
-                />
-              </div>
-            )}
+            <div className="input_fixed">
+              <InputText 
+                addMessage={addMessage} 
+                selectedChat={selectedChat} 
+              />
+            </div>
           </div>
         </>
       ) : (

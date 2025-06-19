@@ -6,8 +6,6 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-// Mongoose Models
-
 const Chat = require('./Models/Chat');
 const User = require('./Models/User');
 const Group = require('./Models/Group');
@@ -20,18 +18,19 @@ const io = new Server(server, {
 
 const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
-// Middle Ware
-app.use(cors());
-app.use(express.json());
 
+// ================== Middleware ==================
+app.use(cors());
+app.use(express.json({ limit: '10mb' })); // Allow large payloads (e.g., base64 images)
+
+// ================== MongoDB ==================
 mongoose.connect('mongodb://127.0.0.1:27017/chatapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB error:', err));
 
-// ================= AUTH =================
-
+// ================== Auth ==================
 app.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -69,8 +68,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// API ROUTES
-
+// ================== Users & Groups ==================
 app.get('/users', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -117,6 +115,7 @@ app.post('/groups', async (req, res) => {
   }
 });
 
+// ================== Chats ==================
 app.get('/chats', async (req, res) => {
   try {
     const { groupId, userId } = req.query;
@@ -139,8 +138,32 @@ app.get('/chats', async (req, res) => {
   }
 });
 
-// SOCKET.IO
+app.post('/messages', async (req, res) => {
+  try {
+    const { message, image, fromUserId, toUserId, groupId } = req.body;
 
+    // Optional image size check (base64 is large, so use a rough byte-length check)
+    if (image && image.length > 4 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Image exceeds 4MB limit' });
+    }
+
+    const newMessage = new Chat({
+      fromUserId,
+      toUserId,
+      groupId,
+      message,
+      image,
+      timestamp: new Date()
+    });
+
+    await newMessage.save();
+    res.status(201).json(newMessage);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================== Socket.IO ==================
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
@@ -166,7 +189,7 @@ io.on('connection', (socket) => {
     socket.join(groupId);
     console.log(`User ${socket.userId} joined group ${groupId}`);
   });
-        
+
   socket.on('joinPrivate', (userRoomId) => {
     socket.join(userRoomId);
     console.log(`User ${socket.userId} joined private room ${userRoomId}`);
@@ -183,6 +206,7 @@ io.on('connection', (socket) => {
         groupId: data.groupId || null,
         groupName: data.groupName || null,
         message: data.message,
+        image: data.image || null,
         username: user.username,
         avatar: user.avatar,
         timestamp: new Date(),
@@ -209,6 +233,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// ================== Start Server ==================
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
