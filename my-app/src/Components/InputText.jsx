@@ -24,7 +24,7 @@ const InputText = ({ addMessage, selectedChat }) => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      setImage(event.target.result); 
+      setImage(event.target.result);
     };
     reader.readAsDataURL(file);
   };
@@ -72,7 +72,7 @@ const InputText = ({ addMessage, selectedChat }) => {
       {image && (
         <div className="image-preview">
           <img src={image} alt="Preview" className="preview-image" />
-          <button 
+          <button
             onClick={removeImage}
             className="remove-image-button"
             aria-label="Remove image"
@@ -102,11 +102,10 @@ const InputText = ({ addMessage, selectedChat }) => {
           rows="1"
         />
 
-        <button 
-          onClick={sendMessage}
-          className="send-button"
-        >
-          Send
+        <button onClick={sendMessage} className="send-button">
+          <svg viewBox="0 0 24 24" width="40" height="50" fill="white">
+            <path d="M1.101 21.757L23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"></path>
+          </svg>
         </button>
       </div>
     </div>

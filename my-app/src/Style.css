@@ -787,11 +787,11 @@ body, html {
 
 
 .chat-container {
-  background-color: white; /* remove grey */
+  background-color: white; 
 }
 
 .message-box {
-  background-color: transparent; /* optional */
+  background-color: transparent; 
 }
 
 
@@ -1053,7 +1053,7 @@ body, html {
 
 .send-button {
   padding: 10px 15px;
-  background: #61dafb;
+  background: white;
   color: white;
   border: none;
   border-radius: 20px;
@@ -1133,3 +1133,33 @@ body, html {
   background-color: #ffffff;
   padding: 6px 10px;
 }
+
+.send-button {
+  /* WhatsApp green background */
+  background: #008069;
+  border: none;
+  border-radius: 50%; /* Perfect circle */
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* Remove default padding */
+  margin-left: 8px; /* Space from input */
+}
+
+/* Hover effect (lighter green) */
+.send-button:hover {
+  background: #00a884;
+}
+
+/* Replace "Send" text with an icon */
+.send-button::after {
+  color: white;
+  background-color: white;
+  font-size: 16px;
+  margin-left: 2px; /* Slight adjustment */
+}
+
