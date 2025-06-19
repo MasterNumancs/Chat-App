@@ -169,14 +169,14 @@ const ChatContainer = () => {
             </div>
 
             <div className="chat-type-tabs">
-              <button 
-                className={activeTab === 'groups' ? 'active' : ''} 
+              <button
+                className={activeTab === 'groups' ? 'active' : ''}
                 onClick={switchToGroups}
               >
                 Group Chats
               </button>
-              <button 
-                className={activeTab === 'private' ? 'active' : ''} 
+              <button
+                className={activeTab === 'private' ? 'active' : ''}
                 onClick={switchToPrivate}
               >
                 Private Chats
@@ -221,8 +221,8 @@ const ChatContainer = () => {
             </div>
 
             {activeTab === 'groups' && (
-              <button 
-                className="create-group-toggle" 
+              <button
+                className="create-group-toggle"
                 onClick={() => setShowCreateGroup(!showCreateGroup)}
               >
                 {showCreateGroup ? 'Cancel' : '+ New Group'}
@@ -251,12 +251,15 @@ const ChatContainer = () => {
                 selectedChat={selectedChat}
               />
             </div>
-            <div className="input_fixed">
-              <InputText 
-                addMessage={addMessage} 
-                selectedChat={selectedChat} 
-              />
-            </div>
+            {selectedChat !== 'group' && (
+              <div className="input_fixed">
+                <InputText
+                  addMessage={addMessage}
+                  selectedChat={selectedChat}
+                />
+              </div>
+            )}
+
           </div>
         </>
       ) : (

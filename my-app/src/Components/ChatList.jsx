@@ -66,15 +66,17 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
   const endOfMessages = useRef();
   const prevChatsLength = useRef(chats.length);
   const [modalImage, setModalImage] = useState(null);
+  const [toastShown, setToastShown] = useState({});
 
   useEffect(() => {
     endOfMessages.current?.scrollIntoView({ behavior: 'smooth' });
 
     if (chats.length > prevChatsLength.current) {
       const newMessage = chats[chats.length - 1];
-      const isCurrentUser = String(newMessage.fromUserId?._id || newMessage.fromUserId) === String(currentUserId);
+      const senderId = String(newMessage.fromUserId?._id || newMessage.fromUserId);
+      const isCurrentUser = senderId === String(currentUserId);
 
-      if (!isCurrentUser) {
+      if (!isCurrentUser && !toastShown[senderId]) {
         const senderName = newMessage.username || 'Someone';
         const messagePreview = newMessage.message?.length > 30
           ? `${newMessage.message.substring(0, 30)}...`
@@ -88,11 +90,13 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
           pauseOnHover: true,
           draggable: true,
         });
+
+        setToastShown((prev) => ({ ...prev, [senderId]: true }));
       }
     }
 
     prevChatsLength.current = chats.length;
-  }, [chats, currentUserId]);
+  }, [chats, currentUserId, toastShown]);
 
   return (
     <div className="chat_list_container">
@@ -167,6 +171,7 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
             />
           );
         })}
+
         <div ref={endOfMessages} className="scroll-anchor" />
       </div>
     </div>
