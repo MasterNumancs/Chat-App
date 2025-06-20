@@ -1316,3 +1316,20 @@ body, html {
   cursor: pointer;
   padding: 8px;
 }
+
+
+.add-selected-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+  margin-top: 10px;
+}
+
+.add-selected-btn:hover {
+  background-color: #218838;
+}

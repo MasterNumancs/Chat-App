@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios';
 import '../Style.css';
 
 const formatTime = (isoString) => {
@@ -62,11 +63,31 @@ const GroupChat = ({ message, image, username, avatar, timestamp, groupName, isS
   </div>
 );
 
-const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
+const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups = [], updateGroupInList }) => {
   const endOfMessages = useRef();
   const prevChatsLength = useRef(chats.length);
   const [modalImage, setModalImage] = useState(null);
   const [toastShown, setToastShown] = useState({});
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [removeTargetGroup, setRemoveTargetGroup] = useState(null);
+
+  const handleRemoveMember = async (groupId, memberId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.put(`http://localhost:3001/groups/${groupId}/remove-member`, {
+        memberId
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      updateGroupInList(res.data);
+      setRemoveTargetGroup(null);
+    } catch (err) {
+      console.error('Remove member error', err);
+    }
+  };
 
   useEffect(() => {
     endOfMessages.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,7 +123,6 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
     <div className="chat_list_container">
       <ToastContainer />
 
-      {/* Image Modal */}
       {modalImage && (
         <div className="image-modal" onClick={() => setModalImage(null)}>
           <img src={modalImage} alt="Full View" className="image-modal-content" />
@@ -125,6 +145,22 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
             </div>
           </div>
         )}
+
+        {groups.map(group => (
+          <div key={group._id} className="group-item">
+            <span>{group.name}</span>
+            {group.createdBy._id === currentUserId && (
+              <div className="menu-wrapper">
+                <button onClick={() => setOpenMenuId(group._id)}>\u22EE</button>
+                {openMenuId === group._id && (
+                  <div className="menu-dropdown">
+                    <button onClick={() => setRemoveTargetGroup(group)}>Remove Members</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
 
         {chats.map((chat) => {
           const key = chat._id || chat.timestamp;
@@ -171,6 +207,25 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat }) => {
             />
           );
         })}
+
+        {removeTargetGroup && (
+          <div className="modal">
+            <h4>Remove Members from {removeTargetGroup.name}</h4>
+            <ul>
+              {removeTargetGroup.members.map(member => (
+                <li key={member._id}>
+                  {member.username}
+                  {member._id !== currentUserId && (
+                    <button onClick={() => handleRemoveMember(removeTargetGroup._id, member._id)}>
+                      Remove
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => setRemoveTargetGroup(null)}>Close</button>
+          </div>
+        )}
 
         <div ref={endOfMessages} className="scroll-anchor" />
       </div>

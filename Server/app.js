@@ -88,7 +88,10 @@ app.get('/groups', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const groups = await Group.find({ members: decoded.id }).populate('members', 'username avatar');
+    const groups = await Group.find({ members: decoded.id })
+      .populate('members', 'username avatar')
+      .populate('createdBy', 'username'); // ✅ Keep admin info
+
     res.json(groups);
   } catch (err) {
     console.error('Get groups error:', err);
@@ -114,7 +117,6 @@ app.post('/groups', async (req, res) => {
   }
 });
 
-// ✅ Add members to group (admin only)
 app.put('/groups/:groupId/add-members', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -141,7 +143,6 @@ app.put('/groups/:groupId/add-members', async (req, res) => {
   }
 });
 
-// ✅ Remove member from group (admin only)
 app.put('/groups/:groupId/remove-member', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
