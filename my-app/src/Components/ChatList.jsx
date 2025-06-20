@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import '../Style.css';
+import PushMessage from './PushMessage';
 
 const formatTime = (isoString) => {
   const date = new Date(isoString);
@@ -70,6 +69,7 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
   const [toastShown, setToastShown] = useState({});
   const [openMenuId, setOpenMenuId] = useState(null);
   const [removeTargetGroup, setRemoveTargetGroup] = useState(null);
+  const [pushMessages, setPushMessages] = useState([]);
 
   const handleRemoveMember = async (groupId, memberId) => {
     try {
@@ -89,6 +89,10 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
     }
   };
 
+  const removePushMessage = (id) => {
+    setPushMessages(prev => prev.filter(msg => msg.id !== id));
+  };
+
   useEffect(() => {
     endOfMessages.current?.scrollIntoView({ behavior: 'smooth' });
 
@@ -98,20 +102,11 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
       const isCurrentUser = senderId === String(currentUserId);
 
       if (!isCurrentUser && !toastShown[senderId]) {
-        const senderName = newMessage.username || 'Someone';
-        const messagePreview = newMessage.message?.length > 30
-          ? `${newMessage.message.substring(0, 30)}...`
-          : newMessage.message || '[Image]';
-
-        toast.info(`${senderName}: ${messagePreview}`, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-
+        setPushMessages(prev => [...prev, {
+          id: Date.now(),
+          ...newMessage
+        }]);
+        
         setToastShown((prev) => ({ ...prev, [senderId]: true }));
       }
     }
@@ -121,7 +116,13 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
 
   return (
     <div className="chat_list_container">
-      <ToastContainer />
+      {pushMessages.map(msg => (
+        <PushMessage 
+          key={msg.id}
+          message={msg}
+          onClose={() => removePushMessage(msg.id)}
+        />
+      ))}
 
       {modalImage && (
         <div className="image-modal" onClick={() => setModalImage(null)}>
