@@ -19,9 +19,8 @@ const io = new Server(server, {
 const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
 
-// ================== Middleware ==================
 app.use(cors());
-app.use(express.json({ limit: '10mb' })); // Allow large payloads (e.g., base64 images)
+app.use(express.json({ limit: '10mb' }));
 
 // ================== MongoDB ==================
 mongoose.connect('mongodb://127.0.0.1:27017/chatapp', {
@@ -115,6 +114,64 @@ app.post('/groups', async (req, res) => {
   }
 });
 
+// ✅ Add members to group (admin only)
+app.put('/groups/:groupId/add-members', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { members } = req.body;
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    if (group.createdBy.toString() !== decoded.id) {
+      return res.status(403).json({ error: 'Only admin can add members' });
+    }
+
+    group.members = [...new Set([...group.members, ...members])];
+    await group.save();
+
+    const populatedGroup = await Group.findById(group._id).populate('members', 'username avatar');
+    res.json(populatedGroup);
+  } catch (err) {
+    console.error('Add members error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ✅ Remove member from group (admin only)
+app.put('/groups/:groupId/remove-member', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { memberId } = req.body;
+
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    if (group.createdBy.toString() !== decoded.id) {
+      return res.status(403).json({ error: 'Only admin can remove members' });
+    }
+
+    if (memberId === group.createdBy.toString()) {
+      return res.status(400).json({ error: 'Cannot remove group admin' });
+    }
+
+    group.members = group.members.filter(m => m.toString() !== memberId);
+    await group.save();
+
+    const populatedGroup = await Group.findById(group._id).populate('members', 'username avatar');
+    res.json(populatedGroup);
+  } catch (err) {
+    console.error('Remove member error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ================== Chats ==================
 app.get('/chats', async (req, res) => {
   try {
@@ -142,7 +199,6 @@ app.post('/messages', async (req, res) => {
   try {
     const { message, image, fromUserId, toUserId, groupId } = req.body;
 
-    // Optional image size check (base64 is large, so use a rough byte-length check)
     if (image && image.length > 4 * 1024 * 1024) {
       return res.status(400).json({ error: 'Image exceeds 4MB limit' });
     }
@@ -180,20 +236,9 @@ io.on('connection', (socket) => {
 
   User.findByIdAndUpdate(socket.userId, { status: 'online' }).exec();
 
-  socket.on('joinPublic', () => {
-    socket.join('group');
-    console.log(`User ${socket.userId} joined public group`);
-  });
-
-  socket.on('joinGroup', (groupId) => {
-    socket.join(groupId);
-    console.log(`User ${socket.userId} joined group ${groupId}`);
-  });
-
-  socket.on('joinPrivate', (userRoomId) => {
-    socket.join(userRoomId);
-    console.log(`User ${socket.userId} joined private room ${userRoomId}`);
-  });
+  socket.on('joinPublic', () => socket.join('group'));
+  socket.on('joinGroup', (groupId) => socket.join(groupId));
+  socket.on('joinPrivate', (userRoomId) => socket.join(userRoomId));
 
   socket.on('sendMessage', async (data) => {
     try {
@@ -233,7 +278,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// ================== Start Server ==================
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

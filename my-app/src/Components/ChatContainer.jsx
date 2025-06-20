@@ -3,6 +3,7 @@ import ChatList from './ChatList';
 import InputText from './InputText';
 import UsersLogin from './UsersLogin';
 import CreateGroup from './CreateGroup';
+import GroupMembersModal from './GroupMembers';
 import socketIOClient from 'socket.io-client';
 import axios from 'axios';
 
@@ -15,6 +16,8 @@ const ChatContainer = () => {
   const [selectedChat, setSelectedChat] = useState('group');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [activeTab, setActiveTab] = useState('groups');
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
   const socketRef = useRef();
 
   const userId = localStorage.getItem('userId');
@@ -26,26 +29,28 @@ const ChatContainer = () => {
   useEffect(() => {
     if (!token) return;
 
-    socketRef.current = socketIOClient('http://localhost:3001', {
+    const socket = socketIOClient('http://localhost:3001', {
       auth: { token },
       transports: ['websocket'],
     });
 
-    socketRef.current.on('connect', () => {
+    socket.on('connect', () => {
       console.log('Socket connected');
-      socketRef.current.emit('joinPrivate', userId);
+      socket.emit('joinPrivate', userId);
     });
 
-    socketRef.current.on('connect_error', (err) => {
+    socket.on('connect_error', (err) => {
       console.error('Socket connection error:', err.message);
     });
 
-    socketRef.current.on('receiveMessage', (msg) => {
+    socket.on('receiveMessage', (msg) => {
       setChats((prev) => [...prev, msg]);
     });
 
+    socketRef.current = socket;
+
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      socket.disconnect();
     };
   }, [token, userId]);
 
@@ -78,12 +83,13 @@ const ChatContainer = () => {
       if (selectedChat === 'group') {
         socketRef.current.emit('joinPublic');
       } else if (selectedChat.startsWith('group-')) {
-        socketRef.current.emit('joinGroup', selectedChat.replace('group-', ''));
+        const groupId = selectedChat.replace('group-', '');
+        socketRef.current.emit('joinGroup', groupId);
       }
     }
 
     if (selectedChat) fetchChats();
-  }, [selectedChat, userId]);
+  }, [selectedChat, userId, token]);
 
   // FETCH USERS
   useEffect(() => {
@@ -99,7 +105,7 @@ const ChatContainer = () => {
       }
     };
 
-    if (user) fetchUsers();
+    if (user && token) fetchUsers();
   }, [user, token, userId]);
 
   // FETCH GROUPS 
@@ -115,8 +121,8 @@ const ChatContainer = () => {
       }
     };
 
-    if (user) fetchGroups();
-  }, [user, token]);
+    if (user && token) fetchGroups();
+  }, [user, token, userId]);
 
   const addMessage = ({ message, image }) => {
     if (!message && !image) return;
@@ -138,11 +144,15 @@ const ChatContainer = () => {
       newChat.toUserId = selectedChat;
     }
 
-    socketRef.current?.emit('sendMessage', newChat);
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('sendMessage', newChat);
+    }
   };
 
   const handleLogout = () => {
-    socketRef.current?.disconnect();
+    if (socketRef.current?.connected) {
+      socketRef.current.disconnect();
+    }
     localStorage.clear();
     setUser('');
     setChats([]);
@@ -152,8 +162,45 @@ const ChatContainer = () => {
 
   const switchToGroups = () => setActiveTab('groups');
   const switchToPrivate = () => {
-    if (showCreateGroup) setShowCreateGroup(false);
+    setShowCreateGroup(false);
     setActiveTab('private');
+  };
+
+  const handleOpenMembersModal = (group) => {
+    setSelectedGroup(group);
+    setShowMembersModal(true);
+  };
+
+  const handleAddMembers = async (newMembers) => {
+    try {
+      await axios.put(
+        `http://localhost:3001/groups/${selectedGroup._id}/add-members`,
+        { members: newMembers },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const res = await axios.get('http://localhost:3001/groups', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGroups(res.data);
+    } catch (error) {
+      console.error('Error adding members:', error);
+    }
+  };
+
+  const handleRemoveMember = async (memberId) => {
+    try {
+      await axios.put(
+        `http://localhost:3001/groups/${selectedGroup._id}/remove-member`,
+        { memberId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const res = await axios.get('http://localhost:3001/groups', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGroups(res.data);
+    } catch (error) {
+      console.error('Error removing member:', error);
+    }
   };
 
   return (
@@ -198,8 +245,24 @@ const ChatContainer = () => {
                       className={`contact_item ${selectedChat === `group-${group._id}` ? 'active' : ''}`}
                       onClick={() => setSelectedChat(`group-${group._id}`)}
                     >
-                      👥 {group.name}
-                      <span className="member-count">{group.members?.length || 0} members</span>
+                      <div className="group-header">
+                        👥 {group.name}
+                        <span className="member-count">{group.members?.length || 0} members</span>
+                      </div>
+                      <div className="group-members-preview">
+                        {group.members?.slice(0, 5).map(member => (
+                          <img 
+                            key={member._id} 
+                            src={member.avatar} 
+                            alt={member.username} 
+                            className="group-member-avatar" 
+                            title={member.username}
+                          />
+                        ))}
+                        {group.members?.length > 5 && (
+                          <span className="more-members">+{group.members.length - 5} more</span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </>
@@ -243,6 +306,21 @@ const ChatContainer = () => {
 
           {/* MAIN CHAT AREA */}
           <div className="chat_area">
+            <div className="chat_header">
+              {selectedChat.startsWith('group-') && (
+                <div className="group-chat-header">
+                  <h3>{groups.find(g => `group-${g._id}` === selectedChat)?.name}</h3>
+                  <button 
+                    className="group-menu-btn"
+                    onClick={() => handleOpenMembersModal(
+                      groups.find(g => `group-${g._id}` === selectedChat)
+                    )}
+                  >
+                    ⋮
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="chat_list_scroll">
               <ChatList
                 chats={chats}
@@ -259,8 +337,18 @@ const ChatContainer = () => {
                 />
               </div>
             )}
-
           </div>
+
+          {/* Group Members Modal */}
+          {showMembersModal && selectedGroup && (
+            <GroupMembersModal
+              group={selectedGroup}
+              currentUser={{ _id: userId, username }}
+              onClose={() => setShowMembersModal(false)}
+              onAddMembers={handleAddMembers}
+              onRemoveMember={handleRemoveMember}
+            />
+          )}
         </>
       ) : (
         <UsersLogin setUser={setUser} />

@@ -1163,3 +1163,156 @@ body, html {
   margin-left: 2px; /* Slight adjustment */
 }
 
+/* Group member styles */
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.member-count {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: normal;
+}
+
+.group-members-preview {
+  display: flex;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.group-member-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+.more-members {
+  font-size: 0.8rem;
+  color: #666;
+  align-self: center;
+}
+
+/* Adjust contact item for groups */
+.contact_item {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+}
+/* Group Members Modal */
+.group-members-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.members-list {
+  padding: 16px;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admin-badge {
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.remove-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-footer {
+  padding: 16px;
+  border-top: 1px solid #eee;
+  text-align: center;
+}
+
+.add-members-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Chat Header */
+.chat_header {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.group-chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-menu-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+}
