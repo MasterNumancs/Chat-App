@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import '../Style.css';
-import PushMessage from './PushMessage';
 
 const formatTime = (isoString) => {
   const date = new Date(isoString);
@@ -69,7 +68,6 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
   const [toastShown, setToastShown] = useState({});
   const [openMenuId, setOpenMenuId] = useState(null);
   const [removeTargetGroup, setRemoveTargetGroup] = useState(null);
-  const [pushMessages, setPushMessages] = useState([]);
 
   const handleRemoveMember = async (groupId, memberId) => {
     try {
@@ -89,8 +87,37 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
     }
   };
 
-  const removePushMessage = (id) => {
-    setPushMessages(prev => prev.filter(msg => msg.id !== id));
+  const showBrowserNotification = (messageData) => {
+    if (!('Notification' in window)) {
+      console.log('This browser does not support notifications');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      createNotification(messageData);
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          createNotification(messageData);
+        }
+      });
+    }
+  };
+
+  const createNotification = (messageData) => {
+    const notificationTitle = messageData.username || 'New message';
+    const notificationOptions = {
+      body: messageData.message || 'You have a new message',
+      icon: messageData.avatar || '/default-avatar.png',
+      timestamp: Date.now()
+    };
+
+    const notification = new Notification(notificationTitle, notificationOptions);
+
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
   };
 
   useEffect(() => {
@@ -102,11 +129,7 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
       const isCurrentUser = senderId === String(currentUserId);
 
       if (!isCurrentUser && !toastShown[senderId]) {
-        setPushMessages(prev => [...prev, {
-          id: Date.now(),
-          ...newMessage
-        }]);
-        
+        showBrowserNotification(newMessage);
         setToastShown((prev) => ({ ...prev, [senderId]: true }));
       }
     }
@@ -116,14 +139,6 @@ const ChatList = ({ chats = [], currentUserId, users = [], selectedChat, groups 
 
   return (
     <div className="chat_list_container">
-      {pushMessages.map(msg => (
-        <PushMessage 
-          key={msg.id}
-          message={msg}
-          onClose={() => removePushMessage(msg.id)}
-        />
-      ))}
-
       {modalImage && (
         <div className="image-modal" onClick={() => setModalImage(null)}>
           <img src={modalImage} alt="Full View" className="image-modal-content" />

@@ -1,4 +1,3 @@
-// Models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -19,6 +18,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['online', 'offline', 'away'],
     default: 'offline'
+  },
+  pushSubscription: {
+    endpoint: String,
+    keys: {
+      p256dh: String,
+      auth: String
+    }
   }
 }, { timestamps: true });
 

@@ -7,6 +7,8 @@ import GroupMembersModal from './GroupMembers';
 import socketIOClient from 'socket.io-client';
 import axios from 'axios';
 
+const VAPID_PUBLIC_KEY = 'BKWdPaYFw_BwlQkz6Bd2Xx1UNaTkdm7GnE8BVoNEcTPIYcbgqtsZNeMtsdStzRgM-vmkwkqf_FUK86z37AdrVqI';
+
 const ChatContainer = () => {
   const [user, setUser] = useState(localStorage.getItem('user'));
   const [chats, setChats] = useState([]);
@@ -24,6 +26,45 @@ const ChatContainer = () => {
   const username = localStorage.getItem('user');
   const avatar = localStorage.getItem('avatar');
   const token = localStorage.getItem('token');
+
+  // === Register Service Worker and Push ===
+  useEffect(() => {
+    const registerPush = async () => {
+      if (!('serviceWorker' in navigator)) return;
+
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+
+        await axios.post('http://localhost:3001/api/save-subscription', {
+          userId,
+          subscription,
+        });
+      } catch (err) {
+        console.error('Push subscription failed:', err);
+      }
+    };
+
+    if (user && token) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          registerPush();
+        }
+      });
+    }
+  }, [user, token, userId]);
+
+  // Utility to convert VAPID key
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+  };
 
   // === SOCKET.IO CONNECTION ===
   useEffect(() => {

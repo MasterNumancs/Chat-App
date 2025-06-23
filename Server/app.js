@@ -5,6 +5,7 @@ const cors = require('cors');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const webpush = require('web-push');
 
 const Chat = require('./Models/Chat');
 const User = require('./Models/User');
@@ -18,6 +19,18 @@ const io = new Server(server, {
 
 const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
+
+// Configure VAPID keys (replace with your actual keys)
+const vapidKeys = {
+  publicKey: 'BKWdPaYFw_BwlQkz6Bd2Xx1UNaTkdm7GnE8BVoNEcTPIYcbgqtsZNeMtsdStzRgM-vmkwkqf_FUK86z37AdrVqI',
+  privateKey: 'vlw1ggI7r9regXhiFVN6oY00TdimnFT7vXwVJJHMtks'  
+};
+
+webpush.setVapidDetails(
+  'mailto:your@email.com',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -67,6 +80,54 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// ================== Push Notification Endpoints ==================
+app.post('/api/save-subscription', async (req, res) => {
+  try {
+    const { userId, subscription } = req.body;
+    await User.findByIdAndUpdate(userId, { pushSubscription: subscription });
+    res.status(200).send('Subscription saved');
+  } catch (error) {
+    console.error('Error saving subscription:', error);
+    res.status(500).send('Error saving subscription');
+  }
+});
+
+app.post('/api/send-push', async (req, res) => {
+  try {
+    const { userId, payload } = req.body;
+    const user = await User.findById(userId);
+    
+    if (!user || !user.pushSubscription) {
+      return res.status(404).send('User or subscription not found');
+    }
+
+    try {
+      await webpush.sendNotification(
+        user.pushSubscription,
+        JSON.stringify({
+          title: payload.title || 'New Message',
+          body: payload.body || 'You have a new notification',
+          icon: payload.icon || '/default-icon.png',
+          image: payload.image,
+          data: { url: payload.url || '/' },
+          vibrate: [200, 100, 200]
+        })
+      );
+      res.status(200).send('Push notification sent');
+    } catch (error) {
+      console.error('Push send error:', error);
+      if (error.statusCode === 410) {
+        // Subscription expired - remove it
+        await User.findByIdAndUpdate(userId, { $unset: { pushSubscription: 1 } });
+      }
+      res.status(500).send('Error sending push');
+    }
+  } catch (error) {
+    console.error('Error in send-push:', error);
+    res.status(500).send('Server error');
+  }
+});
+
 // ================== Users & Groups ==================
 app.get('/users', async (req, res) => {
   try {
@@ -90,7 +151,7 @@ app.get('/groups', async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const groups = await Group.find({ members: decoded.id })
       .populate('members', 'username avatar')
-      .populate('createdBy', 'username'); // ✅ Keep admin info
+      .populate('createdBy', 'username');
 
     res.json(groups);
   } catch (err) {
@@ -260,11 +321,60 @@ io.on('connection', (socket) => {
 
       await newChat.save();
 
+      // Determine recipients and send messages
       if (data.groupId) {
+        const group = await Group.findById(data.groupId).populate('members');
         io.to(data.groupId).emit('receiveMessage', newChat);
+        
+        // Send push notifications to group members
+        group.members.forEach(async (member) => {
+          if (member._id.toString() !== socket.userId && member.pushSubscription) {
+            const payload = {
+              title: `New message in ${data.groupName || 'Group'}`,
+              body: data.message || '[Image]',
+              icon: user.avatar,
+              image: data.image,
+              url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}?chat=group-${data.groupId}`
+            };
+            
+            try {
+              await webpush.sendNotification(
+                member.pushSubscription,
+                JSON.stringify(payload)
+              );
+            } catch (error) {
+              if (error.statusCode === 410) {
+                await User.findByIdAndUpdate(member._id, { $unset: { pushSubscription: 1 } });
+              }
+            }
+          }
+        });
       } else if (data.toUserId) {
+        const recipient = await User.findById(data.toUserId);
         io.to(data.toUserId).emit('receiveMessage', newChat);
         socket.emit('receiveMessage', newChat);
+        
+        // Send push notification to recipient
+        if (recipient && recipient.pushSubscription) {
+          const payload = {
+            title: `New message from ${user.username}`,
+            body: data.message || '[Image]',
+            icon: user.avatar,
+            image: data.image,
+            url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}?chat=${data.toUserId}`
+          };
+          
+          try {
+            await webpush.sendNotification(
+              recipient.pushSubscription,
+              JSON.stringify(payload)
+            );
+          } catch (error) {
+            if (error.statusCode === 410) {
+              await User.findByIdAndUpdate(recipient._id, { $unset: { pushSubscription: 1 } });
+            }
+          }
+        }
       } else {
         io.to('group').emit('receiveMessage', newChat);
       }
