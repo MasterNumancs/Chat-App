@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 function connection() {
-    const mongoURI = "mongodb://127.0.0.1:27017/Chats";
+    const mongoURI = "mongodb://localhost:27017/Chats";
     mongoose.connect(mongoURI, {
         useNewUrlParser: true,
         useUnifiedTopology: true

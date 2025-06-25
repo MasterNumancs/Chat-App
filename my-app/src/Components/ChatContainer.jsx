@@ -27,14 +27,13 @@ const ChatContainer = () => {
   const avatar = localStorage.getItem('avatar');
   const token = localStorage.getItem('token');
 
-  // === Register Service Worker and Push ===
+  // Register Service Worker and Push
   useEffect(() => {
     const registerPush = async () => {
       if (!('serviceWorker' in navigator)) return;
 
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
-
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
@@ -58,7 +57,6 @@ const ChatContainer = () => {
     }
   }, [user, token, userId]);
 
-  // Utility to convert VAPID key
   const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -66,7 +64,7 @@ const ChatContainer = () => {
     return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
   };
 
-  // === SOCKET.IO CONNECTION ===
+  // Socket.IO Connection
   useEffect(() => {
     if (!token) return;
 
@@ -95,7 +93,7 @@ const ChatContainer = () => {
     };
   }, [token, userId]);
 
-  // FETCH CHATS ON CHAT CHANGE 
+  // Fetch chats when selected chat changes
   useEffect(() => {
     const fetchChats = async () => {
       try {
@@ -132,7 +130,7 @@ const ChatContainer = () => {
     if (selectedChat) fetchChats();
   }, [selectedChat, userId, token]);
 
-  // FETCH USERS
+  // Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -149,7 +147,7 @@ const ChatContainer = () => {
     if (user && token) fetchUsers();
   }, [user, token, userId]);
 
-  // FETCH GROUPS 
+  // Fetch groups
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -214,15 +212,27 @@ const ChatContainer = () => {
 
   const handleAddMembers = async (newMembers) => {
     try {
+      if (!selectedGroup) return;
+      
       await axios.put(
         `http://localhost:3001/groups/${selectedGroup._id}/add-members`,
         { members: newMembers },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+      // Refresh groups list
       const res = await axios.get('http://localhost:3001/groups', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setGroups(res.data);
+      
+      // Update the current chat if it's the modified group
+      if (selectedChat === `group-${selectedGroup._id}`) {
+        const groupChats = await axios.get(
+          `http://localhost:3001/chats?groupId=${selectedGroup._id}`
+        );
+        setChats(groupChats.data);
+      }
     } catch (error) {
       console.error('Error adding members:', error);
     }
@@ -230,11 +240,15 @@ const ChatContainer = () => {
 
   const handleRemoveMember = async (memberId) => {
     try {
+      if (!selectedGroup) return;
+      
       await axios.put(
         `http://localhost:3001/groups/${selectedGroup._id}/remove-member`,
         { memberId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+      // Refresh groups list
       const res = await axios.get('http://localhost:3001/groups', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -248,7 +262,7 @@ const ChatContainer = () => {
     <div className="chat_wrapper">
       {user ? (
         <>
-          {/* SIDEBAR */}
+          {/* Sidebar */}
           <div className="sidebar">
             <div className="sidebar_header">
               <img src={avatar} alt={user} className="current-user-avatar" />
@@ -345,7 +359,7 @@ const ChatContainer = () => {
             )}
           </div>
 
-          {/* MAIN CHAT AREA */}
+          {/* Main Chat Area */}
           <div className="chat_area">
             <div className="chat_header">
               {selectedChat.startsWith('group-') && (

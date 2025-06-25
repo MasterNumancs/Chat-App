@@ -20,23 +20,17 @@ const io = new Server(server, {
 const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
 
-// Configure VAPID keys (replace with your actual keys)
 const vapidKeys = {
   publicKey: 'BKWdPaYFw_BwlQkz6Bd2Xx1UNaTkdm7GnE8BVoNEcTPIYcbgqtsZNeMtsdStzRgM-vmkwkqf_FUK86z37AdrVqI',
-  privateKey: 'vlw1ggI7r9regXhiFVN6oY00TdimnFT7vXwVJJHMtks'  
+  privateKey: 'vlw1ggI7r9regXhiFVN6oY00TdimnFT7vXwVJJHMtks'
 };
 
-webpush.setVapidDetails(
-  'mailto:your@email.com',
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
+webpush.setVapidDetails('mailto:your@email.com', vapidKeys.publicKey, vapidKeys.privateKey);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// ================== MongoDB ==================
-mongoose.connect('mongodb://127.0.0.1:27017/chatapp', {
+mongoose.connect('mongodb://localhost:27017/chatapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => console.log('MongoDB Connected'))
@@ -72,7 +66,6 @@ app.post('/login', async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: 'Invalid username or password' });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
-
     res.json({ token, username: user.username, userId: user._id, avatar: user.avatar });
   } catch (err) {
     console.error('Login error:', err);
@@ -80,7 +73,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ================== Push Notification Endpoints ==================
+// ================== Push Notification ==================
 app.post('/api/save-subscription', async (req, res) => {
   try {
     const { userId, subscription } = req.body;
@@ -96,28 +89,22 @@ app.post('/api/send-push', async (req, res) => {
   try {
     const { userId, payload } = req.body;
     const user = await User.findById(userId);
-    
-    if (!user || !user.pushSubscription) {
-      return res.status(404).send('User or subscription not found');
-    }
+
+    if (!user || !user.pushSubscription) return res.status(404).send('User or subscription not found');
 
     try {
-      await webpush.sendNotification(
-        user.pushSubscription,
-        JSON.stringify({
-          title: payload.title || 'New Message',
-          body: payload.body || 'You have a new notification',
-          icon: payload.icon || '/default-icon.png',
-          image: payload.image,
-          data: { url: payload.url || '/' },
-          vibrate: [200, 100, 200]
-        })
-      );
+      await webpush.sendNotification(user.pushSubscription, JSON.stringify({
+        title: payload.title || 'New Message',
+        body: payload.body || 'You have a new notification',
+        icon: payload.icon || '/default-icon.png',
+        image: payload.image,
+        data: { url: payload.url || '/' },
+        vibrate: [200, 100, 200]
+      }));
       res.status(200).send('Push notification sent');
     } catch (error) {
       console.error('Push send error:', error);
       if (error.statusCode === 410) {
-        // Subscription expired - remove it
         await User.findByIdAndUpdate(userId, { $unset: { pushSubscription: 1 } });
       }
       res.status(500).send('Error sending push');
@@ -163,8 +150,6 @@ app.get('/groups', async (req, res) => {
 app.post('/groups', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
     const decoded = jwt.verify(token, JWT_SECRET);
     const { name, members } = req.body;
     const allMembers = [...new Set([...members, decoded.id])];
@@ -181,17 +166,12 @@ app.post('/groups', async (req, res) => {
 app.put('/groups/:groupId/add-members', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
     const decoded = jwt.verify(token, JWT_SECRET);
     const { members } = req.body;
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ error: 'Group not found' });
-
-    if (group.createdBy.toString() !== decoded.id) {
-      return res.status(403).json({ error: 'Only admin can add members' });
-    }
+    if (group.createdBy.toString() !== decoded.id) return res.status(403).json({ error: 'Only admin can add members' });
 
     group.members = [...new Set([...group.members, ...members])];
     await group.save();
@@ -207,21 +187,13 @@ app.put('/groups/:groupId/add-members', async (req, res) => {
 app.put('/groups/:groupId/remove-member', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
     const decoded = jwt.verify(token, JWT_SECRET);
     const { memberId } = req.body;
 
     const group = await Group.findById(req.params.groupId);
     if (!group) return res.status(404).json({ error: 'Group not found' });
-
-    if (group.createdBy.toString() !== decoded.id) {
-      return res.status(403).json({ error: 'Only admin can remove members' });
-    }
-
-    if (memberId === group.createdBy.toString()) {
-      return res.status(400).json({ error: 'Cannot remove group admin' });
-    }
+    if (group.createdBy.toString() !== decoded.id) return res.status(403).json({ error: 'Only admin can remove members' });
+    if (memberId === group.createdBy.toString()) return res.status(400).json({ error: 'Cannot remove group admin' });
 
     group.members = group.members.filter(m => m.toString() !== memberId);
     await group.save();
@@ -240,44 +212,15 @@ app.get('/chats', async (req, res) => {
     const { groupId, userId } = req.query;
     let query = {};
 
-    if (groupId) {
-      query.groupId = groupId;
-    } else if (userId) {
-      query.$or = [{ fromUserId: userId }, { toUserId: userId }];
-    } else {
-      query.groupId = null;
-      query.toUserId = null;
-    }
+    if (groupId) query.groupId = groupId;
+    else if (userId) query.$or = [{ fromUserId: userId }, { toUserId: userId }];
+    else query.groupId = null, query.toUserId = null;
 
     const chats = await Chat.find(query).sort({ timestamp: 1 }).limit(100);
     res.json(chats);
   } catch (err) {
     console.error('Get chats error:', err);
     res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/messages', async (req, res) => {
-  try {
-    const { message, image, fromUserId, toUserId, groupId } = req.body;
-
-    if (image && image.length > 4 * 1024 * 1024) {
-      return res.status(400).json({ error: 'Image exceeds 4MB limit' });
-    }
-
-    const newMessage = new Chat({
-      fromUserId,
-      toUserId,
-      groupId,
-      message,
-      image,
-      timestamp: new Date()
-    });
-
-    await newMessage.save();
-    res.status(201).json(newMessage);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
@@ -295,7 +238,6 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id, 'User ID:', socket.userId);
-
   User.findByIdAndUpdate(socket.userId, { status: 'online' }).exec();
 
   socket.on('joinPublic', () => socket.join('group'));
@@ -321,13 +263,11 @@ io.on('connection', (socket) => {
 
       await newChat.save();
 
-      // Determine recipients and send messages
       if (data.groupId) {
         const group = await Group.findById(data.groupId).populate('members');
         io.to(data.groupId).emit('receiveMessage', newChat);
-        
-        // Send push notifications to group members
-        group.members.forEach(async (member) => {
+
+        for (const member of group.members) {
           if (member._id.toString() !== socket.userId && member.pushSubscription) {
             const payload = {
               title: `New message in ${data.groupName || 'Group'}`,
@@ -336,26 +276,21 @@ io.on('connection', (socket) => {
               image: data.image,
               url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}?chat=group-${data.groupId}`
             };
-            
             try {
-              await webpush.sendNotification(
-                member.pushSubscription,
-                JSON.stringify(payload)
-              );
+              await webpush.sendNotification(member.pushSubscription, JSON.stringify(payload));
             } catch (error) {
               if (error.statusCode === 410) {
                 await User.findByIdAndUpdate(member._id, { $unset: { pushSubscription: 1 } });
               }
             }
           }
-        });
+        }
       } else if (data.toUserId) {
         const recipient = await User.findById(data.toUserId);
-        io.to(data.toUserId).emit('receiveMessage', newChat);
         socket.emit('receiveMessage', newChat);
-        
-        // Send push notification to recipient
-        if (recipient && recipient.pushSubscription) {
+        io.to(data.toUserId).emit('receiveMessage', newChat);
+
+        if (recipient?.pushSubscription) {
           const payload = {
             title: `New message from ${user.username}`,
             body: data.message || '[Image]',
@@ -363,12 +298,8 @@ io.on('connection', (socket) => {
             image: data.image,
             url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}?chat=${data.toUserId}`
           };
-          
           try {
-            await webpush.sendNotification(
-              recipient.pushSubscription,
-              JSON.stringify(payload)
-            );
+            await webpush.sendNotification(recipient.pushSubscription, JSON.stringify(payload));
           } catch (error) {
             if (error.statusCode === 410) {
               await User.findByIdAndUpdate(recipient._id, { $unset: { pushSubscription: 1 } });

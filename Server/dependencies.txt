@@ -1,0 +1,273 @@
+server@1.0.0 E:\Pull\Chat-App\Server
+├─┬ bcrypt@6.0.0
+│ ├── node-addon-api@8.4.0
+│ └── node-gyp-build@4.8.4
+├── bcryptjs@3.0.2
+├─┬ cors@2.8.5
+│ ├── object-assign@4.1.1
+│ └── vary@1.1.2
+├─┬ express@5.1.0
+│ ├─┬ accepts@2.0.0
+│ │ ├── mime-types@3.0.1 deduped
+│ │ └── negotiator@1.0.0
+│ ├─┬ body-parser@2.2.0
+│ │ ├── bytes@3.1.2
+│ │ ├── content-type@1.0.5 deduped
+│ │ ├── debug@4.4.1 deduped
+│ │ ├── http-errors@2.0.0 deduped
+│ │ ├─┬ iconv-lite@0.6.3
+│ │ │ └── safer-buffer@2.1.2 deduped
+│ │ ├── on-finished@2.4.1 deduped
+│ │ ├── qs@6.14.0 deduped
+│ │ ├─┬ raw-body@3.0.0
+│ │ │ ├── bytes@3.1.2 deduped
+│ │ │ ├── http-errors@2.0.0 deduped
+│ │ │ ├── iconv-lite@0.6.3 deduped
+│ │ │ └── unpipe@1.0.0
+│ │ └── type-is@2.0.1 deduped
+│ ├─┬ content-disposition@1.0.0
+│ │ └── safe-buffer@5.2.1
+│ ├── content-type@1.0.5
+│ ├── cookie-signature@1.2.2
+│ ├── cookie@0.7.2
+│ ├─┬ debug@4.4.1
+│ │ └── ms@2.1.3 deduped
+│ ├── encodeurl@2.0.0
+│ ├── escape-html@1.0.3
+│ ├── etag@1.8.1
+│ ├─┬ finalhandler@2.1.0
+│ │ ├── debug@4.4.1 deduped
+│ │ ├── encodeurl@2.0.0 deduped
+│ │ ├── escape-html@1.0.3 deduped
+│ │ ├── on-finished@2.4.1 deduped
+│ │ ├── parseurl@1.3.3 deduped
+│ │ └── statuses@2.0.2 deduped
+│ ├── fresh@2.0.0
+│ ├─┬ http-errors@2.0.0
+│ │ ├── depd@2.0.0
+│ │ ├── inherits@2.0.4
+│ │ ├── setprototypeof@1.2.0
+│ │ ├── statuses@2.0.1
+│ │ └── toidentifier@1.0.1
+│ ├── merge-descriptors@2.0.0
+│ ├─┬ mime-types@3.0.1
+│ │ └── mime-db@1.54.0
+│ ├─┬ on-finished@2.4.1
+│ │ └── ee-first@1.1.1
+│ ├─┬ once@1.4.0
+│ │ └── wrappy@1.0.2
+│ ├── parseurl@1.3.3
+│ ├─┬ proxy-addr@2.0.7
+│ │ ├── forwarded@0.2.0
+│ │ └── ipaddr.js@1.9.1
+│ ├─┬ qs@6.14.0
+│ │ └─┬ side-channel@1.1.0
+│ │   ├── es-errors@1.3.0
+│ │   ├── object-inspect@1.13.4
+│ │   ├─┬ side-channel-list@1.0.0
+│ │   │ ├── es-errors@1.3.0 deduped
+│ │   │ └── object-inspect@1.13.4 deduped
+│ │   ├─┬ side-channel-map@1.0.1
+│ │   │ ├─┬ call-bound@1.0.4
+│ │   │ │ ├─┬ call-bind-apply-helpers@1.0.2
+│ │   │ │ │ ├── es-errors@1.3.0 deduped
+│ │   │ │ │ └── function-bind@1.1.2 deduped
+│ │   │ │ └── get-intrinsic@1.3.0 deduped
+│ │   │ ├── es-errors@1.3.0 deduped
+│ │   │ ├─┬ get-intrinsic@1.3.0
+│ │   │ │ ├── call-bind-apply-helpers@1.0.2 deduped
+│ │   │ │ ├── es-define-property@1.0.1
+│ │   │ │ ├── es-errors@1.3.0 deduped
+│ │   │ │ ├─┬ es-object-atoms@1.1.1
+│ │   │ │ │ └── es-errors@1.3.0 deduped
+│ │   │ │ ├── function-bind@1.1.2
+│ │   │ │ ├─┬ get-proto@1.0.1
+│ │   │ │ │ ├─┬ dunder-proto@1.0.1
+│ │   │ │ │ │ ├── call-bind-apply-helpers@1.0.2 deduped
+│ │   │ │ │ │ ├── es-errors@1.3.0 deduped
+│ │   │ │ │ │ └── gopd@1.2.0 deduped
+│ │   │ │ │ └── es-object-atoms@1.1.1 deduped
+│ │   │ │ ├── gopd@1.2.0
+│ │   │ │ ├── has-symbols@1.1.0
+│ │   │ │ ├─┬ hasown@2.0.2
+│ │   │ │ │ └── function-bind@1.1.2 deduped
+│ │   │ │ └── math-intrinsics@1.1.0
+│ │   │ └── object-inspect@1.13.4 deduped
+│ │   └─┬ side-channel-weakmap@1.0.2
+│ │     ├── call-bound@1.0.4 deduped
+│ │     ├── es-errors@1.3.0 deduped
+│ │     ├── get-intrinsic@1.3.0 deduped
+│ │     ├── object-inspect@1.13.4 deduped
+│ │     └── side-channel-map@1.0.1 deduped
+│ ├── range-parser@1.2.1
+│ ├─┬ router@2.2.0
+│ │ ├── debug@4.4.1 deduped
+│ │ ├── depd@2.0.0 deduped
+│ │ ├── is-promise@4.0.0
+│ │ ├── parseurl@1.3.3 deduped
+│ │ └── path-to-regexp@8.2.0
+│ ├─┬ send@1.2.0
+│ │ ├── debug@4.4.1 deduped
+│ │ ├── encodeurl@2.0.0 deduped
+│ │ ├── escape-html@1.0.3 deduped
+│ │ ├── etag@1.8.1 deduped
+│ │ ├── fresh@2.0.0 deduped
+│ │ ├── http-errors@2.0.0 deduped
+│ │ ├── mime-types@3.0.1 deduped
+│ │ ├── ms@2.1.3 deduped
+│ │ ├── on-finished@2.4.1 deduped
+│ │ ├── range-parser@1.2.1 deduped
+│ │ └── statuses@2.0.2 deduped
+│ ├─┬ serve-static@2.2.0
+│ │ ├── encodeurl@2.0.0 deduped
+│ │ ├── escape-html@1.0.3 deduped
+│ │ ├── parseurl@1.3.3 deduped
+│ │ └── send@1.2.0 deduped
+│ ├── statuses@2.0.2
+│ ├─┬ type-is@2.0.1
+│ │ ├── content-type@1.0.5 deduped
+│ │ ├── media-typer@1.1.0
+│ │ └── mime-types@3.0.1 deduped
+│ └── vary@1.1.2 deduped
+├─┬ jsonwebtoken@9.0.2
+│ ├─┬ jws@3.2.2
+│ │ ├─┬ jwa@1.4.2
+│ │ │ ├── buffer-equal-constant-time@1.0.1
+│ │ │ ├─┬ ecdsa-sig-formatter@1.0.11
+│ │ │ │ └── safe-buffer@5.2.1 deduped
+│ │ │ └── safe-buffer@5.2.1 deduped
+│ │ └── safe-buffer@5.2.1 deduped
+│ ├── lodash.includes@4.3.0
+│ ├── lodash.isboolean@3.0.3
+│ ├── lodash.isinteger@4.0.4
+│ ├── lodash.isnumber@3.0.3
+│ ├── lodash.isplainobject@4.0.6
+│ ├── lodash.isstring@4.0.1
+│ ├── lodash.once@4.1.1
+│ ├── ms@2.1.3
+│ └── semver@7.7.2
+├─┬ mongoose@8.16.0
+│ ├── bson@6.10.4
+│ ├── kareem@2.6.3
+│ ├─┬ mongodb@6.17.0
+│ │ ├── UNMET OPTIONAL DEPENDENCY @aws-sdk/credential-providers@^3.188.0
+│ │ ├─┬ @mongodb-js/saslprep@1.3.0
+│ │ │ └─┬ sparse-bitfield@3.0.3
+│ │ │   └── memory-pager@1.5.0
+│ │ ├── UNMET OPTIONAL DEPENDENCY @mongodb-js/zstd@^1.1.0 || ^2.0.0
+│ │ ├── bson@6.10.4 deduped
+│ │ ├── UNMET OPTIONAL DEPENDENCY gcp-metadata@^5.2.0
+│ │ ├── UNMET OPTIONAL DEPENDENCY kerberos@^2.0.1
+│ │ ├── UNMET OPTIONAL DEPENDENCY mongodb-client-encryption@>=6.0.0 <7
+│ │ ├─┬ mongodb-connection-string-url@3.0.2
+│ │ │ ├─┬ @types/whatwg-url@11.0.5
+│ │ │ │ └── @types/webidl-conversions@7.0.3
+│ │ │ └─┬ whatwg-url@14.2.0
+│ │ │   ├─┬ tr46@5.1.1
+│ │ │   │ └── punycode@2.3.1
+│ │ │   └── webidl-conversions@7.0.0
+│ │ ├── UNMET OPTIONAL DEPENDENCY snappy@^7.2.2
+│ │ └── UNMET OPTIONAL DEPENDENCY socks@^2.7.1
+│ ├── mpath@0.9.0
+│ ├─┬ mquery@5.0.0
+│ │ └── debug@4.4.1 deduped
+│ ├── ms@2.1.3 deduped
+│ └── sift@17.1.3
+├─┬ nodemon@3.1.10
+│ ├─┬ chokidar@3.6.0
+│ │ ├─┬ anymatch@3.1.3
+│ │ │ ├── normalize-path@3.0.0 deduped
+│ │ │ └── picomatch@2.3.1
+│ │ ├─┬ braces@3.0.3
+│ │ │ └─┬ fill-range@7.1.1
+│ │ │   └─┬ to-regex-range@5.0.1
+│ │ │     └── is-number@7.0.0
+│ │ ├── UNMET OPTIONAL DEPENDENCY fsevents@~2.3.2
+│ │ ├─┬ glob-parent@5.1.2
+│ │ │ └── is-glob@4.0.3 deduped
+│ │ ├─┬ is-binary-path@2.1.0
+│ │ │ └── binary-extensions@2.3.0
+│ │ ├─┬ is-glob@4.0.3
+│ │ │ └── is-extglob@2.1.1
+│ │ ├── normalize-path@3.0.0
+│ │ └─┬ readdirp@3.6.0
+│ │   └── picomatch@2.3.1 deduped
+│ ├── debug@4.4.1 deduped
+│ ├── ignore-by-default@1.0.1
+│ ├─┬ minimatch@3.1.2
+│ │ └─┬ brace-expansion@1.1.12
+│ │   ├── balanced-match@1.0.2
+│ │   └── concat-map@0.0.1
+│ ├── pstree.remy@1.1.8
+│ ├── semver@7.7.2 deduped
+│ ├─┬ simple-update-notifier@2.0.0
+│ │ └── semver@7.7.2 deduped
+│ ├─┬ supports-color@5.5.0
+│ │ └── has-flag@3.0.0
+│ ├── touch@3.1.1
+│ └── undefsafe@2.0.5
+├─┬ socket.io-client@4.8.1
+│ ├── @socket.io/component-emitter@3.1.2
+│ ├─┬ debug@4.3.7
+│ │ └── ms@2.1.3 deduped
+│ ├─┬ engine.io-client@6.6.3
+│ │ ├── @socket.io/component-emitter@3.1.2 deduped
+│ │ ├─┬ debug@4.3.7
+│ │ │ └── ms@2.1.3 deduped
+│ │ ├── engine.io-parser@5.2.3
+│ │ ├─┬ ws@8.17.1
+│ │ │ ├── UNMET OPTIONAL DEPENDENCY bufferutil@^4.0.1
+│ │ │ └── UNMET OPTIONAL DEPENDENCY utf-8-validate@>=5.0.2
+│ │ └── xmlhttprequest-ssl@2.1.2
+│ └─┬ socket.io-parser@4.2.4
+│   ├── @socket.io/component-emitter@3.1.2 deduped
+│   └─┬ debug@4.3.7
+│     └── ms@2.1.3 deduped
+├─┬ socket.io@4.8.1
+│ ├─┬ accepts@1.3.8
+│ │ ├─┬ mime-types@2.1.35
+│ │ │ └── mime-db@1.52.0
+│ │ └── negotiator@0.6.3
+│ ├── base64id@2.0.0
+│ ├── cors@2.8.5 deduped
+│ ├─┬ debug@4.3.7
+│ │ └── ms@2.1.3 deduped
+│ ├─┬ engine.io@6.6.4
+│ │ ├─┬ @types/cors@2.8.19
+│ │ │ └── @types/node@24.0.3 deduped
+│ │ ├─┬ @types/node@24.0.3
+│ │ │ └── undici-types@7.8.0
+│ │ ├─┬ accepts@1.3.8
+│ │ │ ├─┬ mime-types@2.1.35
+│ │ │ │ └── mime-db@1.52.0
+│ │ │ └── negotiator@0.6.3
+│ │ ├── base64id@2.0.0 deduped
+│ │ ├── cookie@0.7.2 deduped
+│ │ ├── cors@2.8.5 deduped
+│ │ ├─┬ debug@4.3.7
+│ │ │ └── ms@2.1.3 deduped
+│ │ ├── engine.io-parser@5.2.3 deduped
+│ │ └── ws@8.17.1 deduped
+│ ├─┬ socket.io-adapter@2.5.5
+│ │ ├─┬ debug@4.3.7
+│ │ │ └── ms@2.1.3 deduped
+│ │ └── ws@8.17.1 deduped
+│ └── socket.io-parser@4.2.4 deduped
+└─┬ web-push@3.6.7
+  ├─┬ asn1.js@5.4.1
+  │ ├── bn.js@4.12.2
+  │ ├── inherits@2.0.4 deduped
+  │ ├── minimalistic-assert@1.0.1
+  │ └── safer-buffer@2.1.2
+  ├── http_ece@1.2.0
+  ├─┬ https-proxy-agent@7.0.6
+  │ ├── agent-base@7.1.3
+  │ └── debug@4.4.1 deduped
+  ├─┬ jws@4.0.0
+  │ ├─┬ jwa@2.0.1
+  │ │ ├── buffer-equal-constant-time@1.0.1 deduped
+  │ │ ├── ecdsa-sig-formatter@1.0.11 deduped
+  │ │ └── safe-buffer@5.2.1 deduped
+  │ └── safe-buffer@5.2.1 deduped
+  └── minimist@1.2.8
+
