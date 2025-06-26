@@ -65,33 +65,55 @@ const ChatContainer = () => {
   };
 
   // Socket.IO Connection
-  useEffect(() => {
-    if (!token) return;
+ useEffect(() => {
+  if (!token) return;
 
-    const socket = socketIOClient('http://localhost:3001', {
-      auth: { token },
-      transports: ['websocket'],
-    });
+  const socket = socketIOClient('http://localhost:3001', {
+    auth: { token },
+    transports: ['websocket'],
+  });
 
-    socket.on('connect', () => {
-      console.log('Socket connected');
-      socket.emit('joinPrivate', userId);
-    });
+  socket.on('connect', () => {
+    console.log('Socket connected');
+    socket.emit('joinPrivate', userId);
 
-    socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
-    });
+    // Join correct room after socket connects
+    if (selectedChat === 'group') {
+      socket.emit('joinPublic');
+    } else if (selectedChat?.startsWith('group-')) {
+      const groupId = selectedChat.replace('group-', '');
+      socket.emit('joinGroup', groupId);
+    }
+  });
 
-    socket.on('receiveMessage', (msg) => {
-      setChats((prev) => [...prev, msg]);
-    });
+  socket.on('connect_error', (err) => {
+    console.error('Socket connection error:', err.message);
+  });
 
-    socketRef.current = socket;
+  socket.on('receiveMessage', (msg) => {
+    const isGroupChat = selectedChat?.startsWith('group-');
+    const isPublicChat = selectedChat === 'group';
+    const isPrivateChat = !isGroupChat && !isPublicChat;
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [token, userId]);
+    const chatMatches =
+      (isPrivateChat &&
+        ((msg.fromUserId === selectedChat && msg.toUserId === userId) ||
+         (msg.fromUserId === userId && msg.toUserId === selectedChat))) ||
+      (isGroupChat && msg.groupId === selectedChat.replace('group-', '')) ||
+      (isPublicChat && !msg.toUserId && !msg.groupId);
+
+    if (!chatMatches) return;
+
+    setChats((prev) => [...prev, msg]);
+  });
+
+  socketRef.current = socket;
+
+  return () => {
+    socket.disconnect();
+  };
+}, [token, userId, selectedChat]);
+
 
   // Fetch chats when selected chat changes
   useEffect(() => {
