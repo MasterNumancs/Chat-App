@@ -21,8 +21,8 @@ const PORT = 3001;
 const JWT_SECRET = 'your_secret_key_here';
 
 const vapidKeys = {
-  publicKey: 'BKWdPaYFw_BwlQkz6Bd2Xx1UNaTkdm7GnE8BVoNEcTPIYcbgqtsZNeMtsdStzRgM-vmkwkqf_FUK86z37AdrVqI',
-  privateKey: 'vlw1ggI7r9regXhiFVN6oY00TdimnFT7vXwVJJHMtks'
+  publicKey: 'BGva91ksRZr9rSA5JXHttvddlmTdKPjsgqGv-br_IDR0QF0v5DfcYpiL6--MbJOYx4YukM2Hu1tdj-UaOQTw3PU',
+  privateKey: '1Hc-TRjQW31h3V7HZMU1eSAIb8jJ8NIoj_oW3NjWfag'
 };
 
 webpush.setVapidDetails('mailto:your@email.com', vapidKeys.publicKey, vapidKeys.privateKey);
@@ -35,6 +35,80 @@ mongoose.connect('mongodb://localhost:27017/chatapp', {
   useUnifiedTopology: true,
 }).then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB error:', err));
+
+// ================== Signal Protocol Key Storage ==================
+const SignalKeySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  identityKey: { type: Object, required: true },
+  registrationId: { type: Number, required: true },
+  preKey: {
+    keyId: { type: Number, required: true },
+    publicKey: { type: Object, required: true }
+  },
+  signedPreKey: {
+    keyId: { type: Number, required: true },
+    publicKey: { type: Object, required: true },
+    signature: { type: Object, required: true }
+  }
+});
+
+const SignalKey = mongoose.model('SignalKey', SignalKeySchema);
+
+// Store user's Signal keys
+app.post('/api/signal-keys', async (req, res) => {
+  try {
+    const { userId, identityKey, registrationId, preKey, signedPreKey } = req.body;
+    
+    await SignalKey.findOneAndUpdate(
+      { userId },
+      { 
+        userId, 
+        identityKey,
+        registrationId,
+        preKey: {
+          keyId: preKey.keyId,
+          publicKey: preKey.keyPair.pubKey
+        },
+        signedPreKey: {
+          keyId: signedPreKey.keyId,
+          publicKey: signedPreKey.keyPair.pubKey,
+          signature: signedPreKey.signature
+        }
+      },
+      { upsert: true, new: true }
+    );
+    
+    res.status(200).send('Keys stored successfully');
+  } catch (error) {
+    console.error('Error storing Signal keys:', error);
+    res.status(500).send('Error storing keys');
+  }
+});
+
+// Get recipient's Signal keys
+app.get('/api/signal-keys/:userId', async (req, res) => {
+  try {
+    const keys = await SignalKey.findOne({ userId: req.params.userId });
+    if (!keys) return res.status(404).send('Keys not found');
+    
+    res.json({
+      identityKey: keys.identityKey,
+      registrationId: keys.registrationId,
+      preKey: {
+        keyId: keys.preKey.keyId,
+        publicKey: keys.preKey.publicKey
+      },
+      signedPreKey: {
+        keyId: keys.signedPreKey.keyId,
+        publicKey: keys.signedPreKey.publicKey,
+        signature: keys.signedPreKey.signature
+      }
+    });
+  } catch (error) {
+    console.error('Error retrieving Signal keys:', error);
+    res.status(500).send('Error retrieving keys');
+  }
+});
 
 // ================== Auth ==================
 app.post('/register', async (req, res) => {
@@ -90,20 +164,24 @@ app.post('/api/send-push', async (req, res) => {
     const { userId, payload } = req.body;
     const user = await User.findById(userId);
 
-    if (!user || !user.pushSubscription) return res.status(404).send('User or subscription not found');
+    if (!user || !user.pushSubscription) {
+      return res.status(404).send('User or subscription not found');
+    }
 
     try {
-      await webpush.sendNotification(user.pushSubscription, JSON.stringify({
-        title: payload.title || 'New Message',
-        body: payload.body || 'You have a new notification',
-        icon: payload.icon || '/default-icon.png',
-        image: payload.image,
-        data: { url: payload.url || '/' },
-        vibrate: [200, 100, 200]
-      }));
+      await webpush.sendNotification(
+        user.pushSubscription, 
+        JSON.stringify({
+          title: payload.title || 'New Message',
+          body: payload.body || 'You have a new notification',
+          icon: payload.icon || '/default-icon.png',
+          image: payload.image,
+          data: { url: payload.url || '/' },
+          vibrate: [200, 100, 200]
+        })
+      );
       res.status(200).send('Push notification sent');
     } catch (error) {
-      console.error('Push send error:', error);
       if (error.statusCode === 410) {
         await User.findByIdAndUpdate(userId, { $unset: { pushSubscription: 1 } });
       }
@@ -249,12 +327,17 @@ io.on('connection', (socket) => {
       const user = await User.findById(socket.userId);
       if (!user) return;
 
+      // Handle both encrypted and unencrypted messages
+      const messageContent = data.encryptedMessage 
+        ? { encryptedMessage: data.encryptedMessage }
+        : { message: data.message };
+
       const newChat = new Chat({
         fromUserId: socket.userId,
         toUserId: data.toUserId || null,
         groupId: data.groupId || null,
         groupName: data.groupName || null,
-        message: data.message,
+        ...messageContent,
         image: data.image || null,
         username: user.username,
         avatar: user.avatar,
@@ -263,10 +346,12 @@ io.on('connection', (socket) => {
 
       await newChat.save();
 
+      // Emit to appropriate recipients
       if (data.groupId) {
         const group = await Group.findById(data.groupId).populate('members');
         io.to(data.groupId).emit('receiveMessage', newChat);
 
+        // Send push notifications to group members
         for (const member of group.members) {
           if (member._id.toString() !== socket.userId && member.pushSubscription) {
             const payload = {
@@ -290,6 +375,7 @@ io.on('connection', (socket) => {
         socket.emit('receiveMessage', newChat);
         io.to(data.toUserId).emit('receiveMessage', newChat);
 
+        // Send push notification to recipient
         if (recipient?.pushSubscription) {
           const payload = {
             title: `New message from ${user.username}`,
