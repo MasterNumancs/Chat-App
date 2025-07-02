@@ -1,134 +1,50 @@
-import {
-  KeyHelper,
-  SessionBuilder,
-  SessionCipher,
-  ProtocolAddress
-} from 'libsignal-protocol-typescript';
+import { Buffer } from 'buffer';
+import { KeyHelper, SessionBuilder, SessionCipher, ProtocolAddress } from 'libsignal-protocol-typescript';
 
-export class Encryption {
+class PersistentSignalStore {
   constructor(userId) {
     this.userId = userId;
-    this.store = new SignalProtocolStore();
-  }
-
-  async initialize() {
-    try {
-      const identityKeyPair = await KeyHelper.generateIdentityKeyPair();
-      const registrationId = await KeyHelper.generateRegistrationId();
-      const preKey = await KeyHelper.generatePreKey(1);
-      const signedPreKey = await KeyHelper.generateSignedPreKey(identityKeyPair, 1);
-
-      await this.store.put('identityKey', identityKeyPair);
-      await this.store.put('registrationId', registrationId);
-      await this.store.put('preKey', preKey);
-      await this.store.put('signedPreKey', signedPreKey);
-
-      return {
-        identityKey: identityKeyPair.pubKey,
-        registrationId,
-        preKey,
-        signedPreKey
-      };
-    } catch (error) {
-      console.error('Error initializing encryption:', error);
-      throw error;
-    }
-  }
-
-  async getPreKeyBundle() {
-    const identityKey = await this.store.getIdentityKeyPair();
-    const registrationId = await this.store.getLocalRegistrationId();
-    const preKey = await this.store.getPreKey(1);
-    const signedPreKey = await this.store.getSignedPreKey(1);
-
-    return {
-      identityKey: identityKey.pubKey,
-      registrationId,
-      preKey: {
-        keyId: 1,
-        publicKey: preKey.pubKey
-      },
-      signedPreKey: {
-        keyId: 1,
-        publicKey: signedPreKey.pubKey,
-        signature: signedPreKey.signature || Buffer.alloc(0)
-      }
-    };
-  }
-
-  async startSession(recipientId, preKeyBundle) {
-    try {
-      const builder = new SessionBuilder(
-        this.store,
-        new ProtocolAddress(recipientId, 1)
-      );
-      
-      await builder.processPreKey({
-        identityKey: preKeyBundle.identityKey,
-        registrationId: preKeyBundle.registrationId,
-        preKey: preKeyBundle.preKey,
-        signedPreKey: preKeyBundle.signedPreKey
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error starting session:', error);
-      throw error;
-    }
-  }
-
-  async encryptMessage(recipientId, message) {
-    try {
-      const address = new ProtocolAddress(recipientId, 1);
-      const sessionCipher = new SessionCipher(this.store, address);
-      
-      const ciphertext = await sessionCipher.encrypt(message);
-      
-      return {
-        type: ciphertext.type,
-        body: ciphertext.body,
-        registrationId: await this.store.getLocalRegistrationId()
-      };
-    } catch (error) {
-      console.error('Error encrypting message:', error);
-      throw error;
-    }
-  }
-
-  async decryptMessage(recipientId, encryptedMessage) {
-    try {
-      const address = new ProtocolAddress(recipientId, 1);
-      const sessionCipher = new SessionCipher(this.store, address);
-      
-      let plaintext;
-      if (encryptedMessage.type === 3) {
-        plaintext = await sessionCipher.decryptPreKeyWhisperMessage(
-          encryptedMessage.body,
-          'binary'
-        );
-      } else {
-        plaintext = await sessionCipher.decryptWhisperMessage(
-          encryptedMessage.body,
-          'binary'
-        );
-      }
-      
-      return plaintext;
-    } catch (error) {
-      console.error('Error decrypting message:', error);
-      throw error;
-    }
-  }
-}
-
-// Remove the imported SignalProtocolStore and use this implementation instead
-class SignalProtocolStore {
-  constructor() {
     this.store = {};
+    this.loadFromStorage();
   }
 
+  loadFromStorage() {
+    const data = localStorage.getItem(`signalStore-${this.userId}`);
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        Object.keys(parsed).forEach(key => {
+          if (parsed[key] && parsed[key].type === 'Buffer') {
+            this.store[key] = Buffer.from(parsed[key].data);
+          } else {
+            this.store[key] = parsed[key];
+          }
+        });
+      } catch (e) {
+        console.error('Failed to load signal store', e);
+      }
+    }
+  }
+
+  saveToStorage() {
+    const toStore = {};
+    Object.keys(this.store).forEach(key => {
+      if (Buffer.isBuffer(this.store[key])) {
+        toStore[key] = {
+          type: 'Buffer',
+          data: Array.from(this.store[key])
+        };
+      } else {
+        toStore[key] = this.store[key];
+      }
+    });
+    localStorage.setItem(`signalStore-${this.userId}`, JSON.stringify(toStore));
+  }
+
+  // Implement all required SignalProtocolStore methods
   async put(key, value) {
     this.store[key] = value;
+    this.saveToStorage();
   }
 
   async get(key) {
@@ -137,6 +53,7 @@ class SignalProtocolStore {
 
   async remove(key) {
     delete this.store[key];
+    this.saveToStorage();
   }
 
   async getIdentityKeyPair() {
@@ -174,13 +91,132 @@ class SignalProtocolStore {
 
   async storeSession(identifier, record) {
     this.store[`session_${identifier}`] = record;
+    this.saveToStorage();
+  }
+}
+
+export class Encryption {
+  constructor(userId) {
+    this.userId = userId;
+    this.store = new PersistentSignalStore(userId);
   }
 
-  async getPreKey() {
-    return this.store['preKey'];
+  async initialize() {
+    try {
+      const identityKeyPair = await KeyHelper.generateIdentityKeyPair();
+      const registrationId = await KeyHelper.generateRegistrationId();
+      const preKey = await KeyHelper.generatePreKey(1);
+      const signedPreKey = await KeyHelper.generateSignedPreKey(identityKeyPair, 1);
+
+      await this.store.put('identityKey', identityKeyPair);
+      await this.store.put('registrationId', registrationId);
+      await this.store.put('preKey', preKey);
+      await this.store.put('signedPreKey', signedPreKey);
+
+      // Prepare data for backend storage
+      const keyData = {
+        userId: this.userId,
+        identityKey: {
+          pubKey: identityKeyPair.pubKey,
+          privKey: identityKeyPair.privKey
+        },
+        registrationId,
+        preKey: {
+          keyId: preKey.keyId,
+          publicKey: preKey.keyPair.pubKey,
+          privateKey: preKey.keyPair.privKey
+        },
+        signedPreKey: {
+          keyId: signedPreKey.keyId,
+          publicKey: signedPreKey.keyPair.pubKey,
+          privateKey: signedPreKey.keyPair.privKey,
+          signature: signedPreKey.signature
+        }
+      };
+
+      return keyData;
+    } catch (error) {
+      console.error('Error initializing encryption:', error);
+      throw error;
+    }
   }
 
-  async getSignedPreKey() {
-    return this.store['signedPreKey'];
+  async establishSession(recipientId) {
+    try {
+      // Check if session exists
+      const existingSession = await this.store.loadSession(`${recipientId}.1`);
+      if (existingSession) return true;
+
+      // Fetch recipient's keys
+      const response = await axios.get(`/api/signal-keys/${recipientId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      const preKeyBundle = {
+        identityKey: response.data.identityKey,
+        registrationId: response.data.registrationId,
+        preKey: response.data.preKey,
+        signedPreKey: response.data.signedPreKey
+      };
+
+      const address = new ProtocolAddress(recipientId, 1);
+      const builder = new SessionBuilder(this.store, address);
+      
+      await builder.processPreKey(preKeyBundle);
+      return true;
+    } catch (error) {
+      console.error('Session establishment failed:', error);
+      throw error;
+    }
+  }
+
+  async encryptMessage(recipientId, message) {
+    try {
+      await this.establishSession(recipientId);
+      
+      const address = new ProtocolAddress(recipientId, 1);
+      const sessionCipher = new SessionCipher(this.store, address);
+      
+      const ciphertext = await sessionCipher.encrypt(message);
+      
+      return {
+        type: ciphertext.type,
+        body: Buffer.from(ciphertext.body).toString('base64'),
+        registrationId: await this.store.getLocalRegistrationId()
+      };
+    } catch (error) {
+      console.error('Error encrypting message:', error);
+      throw error;
+    }
+  }
+
+  async decryptMessage(senderId, encryptedMessage) {
+    try {
+      const address = new ProtocolAddress(senderId, 1);
+      const sessionCipher = new SessionCipher(this.store, address);
+      
+      const encryptedMsg = {
+        type: encryptedMessage.type,
+        body: Buffer.from(encryptedMessage.body, 'base64')
+      };
+
+      let plaintext;
+      if (encryptedMsg.type === 3) {
+        plaintext = await sessionCipher.decryptPreKeyWhisperMessage(
+          encryptedMsg.body,
+          'binary'
+        );
+      } else {
+        plaintext = await sessionCipher.decryptWhisperMessage(
+          encryptedMsg.body,
+          'binary'
+        );
+      }
+      
+      return plaintext;
+    } catch (error) {
+      console.error('Error decrypting message:', error);
+      throw error;
+    }
   }
 }

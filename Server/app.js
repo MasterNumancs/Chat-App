@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const webpush = require('web-push');
+const { Buffer } = require('buffer');
 
 const Chat = require('./Models/Chat');
 const User = require('./Models/User');
@@ -36,7 +37,8 @@ mongoose.connect('mongodb://localhost:27017/chatapp', {
 }).then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB error:', err));
 
-// ================== Signal Protocol Key Storage ==================
+// ================== Signal Protocol Key Storage ================== 
+
 const SignalKeySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   identityKey: { type: Object, required: true },
@@ -59,22 +61,27 @@ app.post('/api/signal-keys', async (req, res) => {
   try {
     const { userId, identityKey, registrationId, preKey, signedPreKey } = req.body;
     
+    const keyData = { 
+      userId, 
+      identityKey: {
+        pubKey: Buffer.isBuffer(identityKey.pubKey) ? identityKey.pubKey : Buffer.from(identityKey.pubKey),
+        privKey: Buffer.isBuffer(identityKey.privKey) ? identityKey.privKey : Buffer.from(identityKey.privKey)
+      },
+      registrationId,
+      preKey: {
+        keyId: preKey.keyId,
+        publicKey: Buffer.isBuffer(preKey.keyPair.pubKey) ? preKey.keyPair.pubKey : Buffer.from(preKey.keyPair.pubKey)
+      },
+      signedPreKey: {
+        keyId: signedPreKey.keyId,
+        publicKey: Buffer.isBuffer(signedPreKey.keyPair.pubKey) ? signedPreKey.keyPair.pubKey : Buffer.from(signedPreKey.keyPair.pubKey),
+        signature: Buffer.isBuffer(signedPreKey.signature) ? signedPreKey.signature : Buffer.from(signedPreKey.signature)
+      }
+    };
+
     await SignalKey.findOneAndUpdate(
       { userId },
-      { 
-        userId, 
-        identityKey,
-        registrationId,
-        preKey: {
-          keyId: preKey.keyId,
-          publicKey: preKey.keyPair.pubKey
-        },
-        signedPreKey: {
-          keyId: signedPreKey.keyId,
-          publicKey: signedPreKey.keyPair.pubKey,
-          signature: signedPreKey.signature
-        }
-      },
+      keyData,
       { upsert: true, new: true }
     );
     
@@ -91,8 +98,12 @@ app.get('/api/signal-keys/:userId', async (req, res) => {
     const keys = await SignalKey.findOne({ userId: req.params.userId });
     if (!keys) return res.status(404).send('Keys not found');
     
-    res.json({
-      identityKey: keys.identityKey,
+    // Convert Buffers to plain objects for response
+    const response = {
+      identityKey: {
+        pubKey: keys.identityKey.pubKey,
+        privKey: keys.identityKey.privKey
+      },
       registrationId: keys.registrationId,
       preKey: {
         keyId: keys.preKey.keyId,
@@ -103,13 +114,14 @@ app.get('/api/signal-keys/:userId', async (req, res) => {
         publicKey: keys.signedPreKey.publicKey,
         signature: keys.signedPreKey.signature
       }
-    });
+    };
+    
+    res.json(response);
   } catch (error) {
     console.error('Error retrieving Signal keys:', error);
     res.status(500).send('Error retrieving keys');
   }
 });
-
 // ================== Auth ==================
 app.post('/register', async (req, res) => {
   try {
